@@ -52,3 +52,7 @@ dist/
 # --- Deployment ---
 .vercel/
 .railway/
+
+# --- Supabase CLI temp files ---
+supabase/.temp/
+.supabase/
