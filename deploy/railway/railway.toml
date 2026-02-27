@@ -1,0 +1,20 @@
+# deploy/railway/railway.toml
+#
+# Railway deployment configuration for the FastAPI backend.
+#
+# How to deploy:
+#   1. Install Railway CLI: npm install -g @railway/cli
+#   2. Login: railway login
+#   3. Link project: railway link
+#   4. Set environment variables in Railway dashboard (copy from .env.example)
+#   5. Deploy: railway up
+#
+# Railway will auto-detect Python via Nixpacks and install requirements.txt.
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

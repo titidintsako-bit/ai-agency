@@ -1,0 +1,44 @@
+# ============================================================
+# AI Agency Platform — Python Dependencies
+# Install with: pip install -r requirements.txt
+# Python 3.11+ required
+# ============================================================
+
+# --- Web Framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.32.1          # ASGI server with websocket support
+
+# --- Anthropic Claude API ---
+anthropic==0.42.0
+
+# --- Supabase ---
+supabase==2.10.0
+
+# --- Configuration & Validation ---
+pydantic==2.10.3
+pydantic-settings==2.7.0           # Load settings from .env with type validation
+python-dotenv==1.0.1
+PyYAML==6.0.2                      # Per-client config files
+
+# --- HTTP Client ---
+# httpx is a transitive dependency of both anthropic and supabase.
+# Do NOT pin it explicitly — supabase 2.10.0 requires httpx<0.28, anthropic requires httpx>=0.23.
+# Let pip resolve the compatible version (will land on httpx 0.27.x).
+
+# --- Timezone data (required on Windows) ---
+# zoneinfo (stdlib) relies on the OS timezone database on Linux/macOS.
+# On Windows there is no system tzdata — this package provides it.
+tzdata>=2024.1
+
+# --- WhatsApp / Twilio ---
+twilio==9.4.3
+
+# --- Auth ---
+PyJWT==2.10.1                      # JWT signing/validation for dashboard login tokens
+
+# --- FastAPI Extras ---
+python-multipart==0.0.20           # Required for form data / file uploads in FastAPI
+
+# --- Development ---
+pytest==8.3.4
+pytest-asyncio==0.24.0

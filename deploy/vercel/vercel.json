@@ -1,0 +1,24 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "name": "ai-agency-dashboard",
+  "comment": "Vercel deployment config for the admin dashboard (static React build). The backend API on Railway is proxied via rewrites so the dashboard never exposes the Railway URL to the browser.",
+  "buildCommand": "cd dashboard && npm run build",
+  "outputDirectory": "dashboard/dist",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://your-railway-app.railway.app/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}
