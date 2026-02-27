@@ -12,7 +12,15 @@ Usage:
 """
 
 from functools import lru_cache
+from pydantic import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Maps pydantic field name → the env var name Railway/production must have set.
+_REQUIRED_ENV_VARS: dict[str, str] = {
+    "anthropic_api_key":        "ANTHROPIC_API_KEY",
+    "supabase_url":             "SUPABASE_URL",
+    "supabase_service_role_key":"SUPABASE_SERVICE_ROLE_KEY",
+}
 
 
 class Settings(BaseSettings):
@@ -74,9 +82,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"            # DEBUG | INFO | WARNING | ERROR
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=".env",               # Used locally; silently skipped if file absent (Railway/Vercel)
         env_file_encoding="utf-8",
         case_sensitive=False,           # ANTHROPIC_API_KEY == anthropic_api_key
+        env_ignore_empty=True,          # Treat blank env vars as unset (Railway template vars)
         extra="ignore",                 # Silently ignore unknown env vars
     )
 
@@ -102,5 +111,23 @@ def get_settings() -> Settings:
 
     Using @lru_cache means the .env file is only read once per process.
     Call get_settings() freely — it is cheap after the first call.
+
+    Raises RuntimeError (not pydantic ValidationError) if required env vars
+    are missing, with a clear message naming the exact variable(s) to set.
     """
-    return Settings()
+    try:
+        return Settings()
+    except ValidationError as exc:
+        missing = [
+            _REQUIRED_ENV_VARS.get(str(err["loc"][0]), str(err["loc"][0]).upper())
+            for err in exc.errors()
+            if err["type"] == "missing"
+        ]
+        if missing:
+            raise RuntimeError(
+                "Missing required environment variables: "
+                + ", ".join(missing)
+                + "\n\nSet these in Railway → Variables tab (or your local .env file)."
+                "\nSee .env.example for the full list of variables."
+            ) from exc
+        raise  # re-raise original if it's a different validation problem
