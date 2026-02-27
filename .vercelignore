@@ -1,15 +1,14 @@
-# Exclude the Python/Railway backend from Vercel entirely.
-# Vercel only deploys the React dashboard in dashboard/.
-# The FastAPI backend lives on Railway, not Vercel.
-*.py
-requirements.txt
-Procfile
-railway.toml
-agents/
-api/
-config/
-core/
-integrations/
-scripts/
-supabase/
-deploy/
+# Exclude the Python/Railway backend from Vercel.
+# Leading slash = root-level only, so dashboard/src/api/ is NOT affected.
+/agents
+/api
+/config
+/core
+/integrations
+/scripts
+/supabase
+/deploy
+/requirements.txt
+/Procfile
+/railway.toml
+/*.py
