@@ -28,9 +28,12 @@ Instantiation:
 """
 
 import logging
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
+
+_SAST = timezone(timedelta(hours=2))
 
 from agents.smilecare.tools import (
     SMILECARE_TOOLS,
@@ -104,8 +107,13 @@ class SmileCareAgent(BaseAgent):
 
     @property
     def system_prompt(self) -> str:
-        """Return the pre-built system prompt from YAML config."""
-        return self._system_prompt_text
+        """Return the system prompt with today's date and time prepended."""
+        now = datetime.now(_SAST)
+        date_line = (
+            f"Current date and time (SAST): "
+            f"{now.strftime('%A, %d %B %Y — %H:%M')}\n\n"
+        )
+        return date_line + self._system_prompt_text
 
     @property
     def tools(self) -> list[dict]:
