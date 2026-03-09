@@ -13,8 +13,8 @@ import axios from 'axios'
 const API_BASE    = '/api'
 const CLIENT_SLUG = 'smilecare'
 const AGENT_NAME  = 'Lerato'
-const TEAL        = '#0B8FAC'
-const TEAL_D      = '#097a93'
+const INDIGO      = '#6366f1'
+const INDIGO_D    = '#4f46e5'
 const MIN_MS      = 900
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -54,14 +54,13 @@ function TypingDots() {
     <div style={{ paddingLeft: 20, paddingBottom: 8, animation: 'cwFade 0.2s ease-out' }}>
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 5,
-        background: '#fff', border: '1px solid #E5E7EB',
+        background: '#161b22', border: '1px solid #21262d',
         borderRadius: '4px 18px 18px 18px',
         padding: '11px 16px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
       }}>
         {[0, 1, 2].map(i => (
           <span key={i} style={{
-            width: 6, height: 6, borderRadius: '50%', background: '#9CA3AF',
+            width: 6, height: 6, borderRadius: '50%', background: '#6e7681',
             display: 'block',
             animation: `cwDot 1.3s ease-in-out infinite`,
             animationDelay: `${i * 0.18}s`,
@@ -77,17 +76,18 @@ function AgentBubble({ msg }) {
   return (
     <div style={{ paddingLeft: 20, paddingRight: 56, paddingBottom: 10, animation: 'cwFade 0.2s ease-out' }}>
       <div style={{
-        background: '#fff', border: '1px solid #E5E7EB',
+        background: '#161b22', border: '1px solid #21262d',
         borderRadius: '4px 18px 18px 18px',
         padding: '12px 16px', fontSize: 14, lineHeight: 1.6,
-        color: '#111827', boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        color: '#e6edf3',
         wordBreak: 'break-word',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
       }}>
         {text.split('\n').map((line, i, arr) => (
           <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
         ))}
       </div>
-      <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 5, paddingLeft: 2 }}>{fmtTime(msg.ts)}</p>
+      <p style={{ fontSize: 11, color: '#6e7681', marginTop: 5, paddingLeft: 2 }}>{fmtTime(msg.ts)}</p>
     </div>
   )
 }
@@ -96,16 +96,17 @@ function UserBubble({ msg }) {
   return (
     <div style={{ paddingRight: 20, paddingLeft: 56, paddingBottom: 10, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', animation: 'cwFade 0.2s ease-out' }}>
       <div style={{
-        background: TEAL, color: '#fff',
+        background: INDIGO, color: '#fff',
         borderRadius: '18px 4px 18px 18px',
         padding: '12px 16px', fontSize: 14, lineHeight: 1.6,
         wordBreak: 'break-word',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
       }}>
         {msg.content.split('\n').map((line, i, arr) => (
           <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
         ))}
       </div>
-      <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 5, paddingRight: 2 }}>{fmtTime(msg.ts)}</p>
+      <p style={{ fontSize: 11, color: '#6e7681', marginTop: 5, paddingRight: 2 }}>{fmtTime(msg.ts)}</p>
     </div>
   )
 }
@@ -116,9 +117,9 @@ function Bubble({ msg }) {
 
 function EscalationNotice() {
   return (
-    <div style={{ margin: '4px 20px 12px', padding: '14px 16px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12 }}>
-      <p style={{ fontSize: 13, color: '#92400E', fontWeight: 600, margin: '0 0 2px' }}>Our team has been notified</p>
-      <p style={{ fontSize: 13, color: '#B45309', margin: 0 }}>A team member will follow up with you shortly. For urgent matters, call <strong>011 234 5678</strong>.</p>
+    <div style={{ margin: '4px 20px 12px', padding: '14px 16px', background: 'rgba(240,136,62,0.08)', border: '1px solid rgba(240,136,62,0.2)', borderRadius: 12 }}>
+      <p style={{ fontSize: 13, color: '#f0883e', fontWeight: 600, margin: '0 0 2px', fontFamily: 'system-ui, sans-serif' }}>Our team has been notified</p>
+      <p style={{ fontSize: 13, color: '#8b949e', margin: 0, fontFamily: 'system-ui, sans-serif' }}>A team member will follow up shortly. For urgent matters, call <strong style={{ color: '#e6edf3' }}>011 234 5678</strong>.</p>
     </div>
   )
 }
@@ -200,38 +201,38 @@ export default function ChatWidget() {
           to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes cwDot {
-          0%, 60%, 100% { transform: scale(1);    opacity: 0.45; }
-          30%            { transform: scale(1.55); opacity: 1;    }
+          0%, 60%, 100% { transform: scale(1);    opacity: 0.4; }
+          30%            { transform: scale(1.55); opacity: 1;   }
         }
         .cw-messages::-webkit-scrollbar { width: 4px; }
         .cw-messages::-webkit-scrollbar-track { background: transparent; }
-        .cw-messages::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
-        .cw-textarea { resize: none; outline: none; border: none; background: transparent; width: 100%; font-family: inherit; font-size: 14px; color: #111827; line-height: 1.5; min-height: 22px; max-height: 120px; }
-        .cw-textarea::placeholder { color: #9CA3AF; }
-        .cw-send:hover { background: ${TEAL_D} !important; }
-        .cw-phone:hover { color: ${TEAL} !important; }
+        .cw-messages::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+        .cw-textarea { resize: none; outline: none; border: none; background: transparent; width: 100%; font-family: system-ui, -apple-system, sans-serif; font-size: 14px; color: #e6edf3; line-height: 1.5; min-height: 22px; max-height: 120px; }
+        .cw-textarea::placeholder { color: #6e7681; }
+        .cw-send:hover:not(:disabled) { background: ${INDIGO_D} !important; }
+        .cw-phone:hover { color: #818cf8 !important; }
       `}</style>
 
-      {/* Page shell — light grey on desktop, white on mobile */}
-      <div style={{ minHeight: '100vh', background: '#F3F4F6', display: 'flex', alignItems: 'stretch', justifyContent: 'center', fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+      {/* Page shell */}
+      <div style={{ minHeight: '100vh', background: '#0d1117', display: 'flex', alignItems: 'stretch', justifyContent: 'center', fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
 
         {/* Chat card */}
-        <div style={{ width: '100%', maxWidth: 520, background: '#fff', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 32px rgba(0,0,0,0.10)', minHeight: '100vh' }}>
+        <div style={{ width: '100%', maxWidth: 520, background: '#161b22', display: 'flex', flexDirection: 'column', borderLeft: '1px solid #21262d', borderRight: '1px solid #21262d', minHeight: '100vh' }}>
 
           {/* ── Header ── */}
-          <div style={{ borderBottom: '1px solid #F0F0F0', padding: '0 20px', height: 72, display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+          <div style={{ borderBottom: '1px solid #21262d', padding: '0 20px', height: 72, display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, background: '#161b22' }}>
 
             {/* Logo */}
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <span style={{ color: '#fff', fontWeight: 700, fontSize: 17, letterSpacing: '-0.5px' }}>SC</span>
             </div>
 
             {/* Name + status */}
             <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 700, fontSize: 15, color: '#111827', lineHeight: 1.2 }}>SmileCare Dental</p>
+              <p style={{ fontWeight: 700, fontSize: 15, color: '#e6edf3', lineHeight: 1.2 }}>SmileCare Dental</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', display: 'block', flexShrink: 0 }} />
-                <span style={{ fontSize: 12, color: '#6B7280' }}>{AGENT_NAME} · Receptionist · Available now</span>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#3fb950', display: 'block', flexShrink: 0, boxShadow: '0 0 6px #3fb95088' }} />
+                <span style={{ fontSize: 12, color: '#8b949e' }}>{AGENT_NAME} · Receptionist · Available now</span>
               </div>
             </div>
 
@@ -240,7 +241,7 @@ export default function ChatWidget() {
               href="tel:+27112345678"
               className="cw-phone"
               title="Call SmileCare — 011 234 5678"
-              style={{ color: '#9CA3AF', transition: 'color 0.15s', padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, textDecoration: 'none' }}
+              style={{ color: '#6e7681', transition: 'color 0.15s', padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, textDecoration: 'none' }}
             >
               <PhoneIcon />
             </a>
@@ -248,13 +249,13 @@ export default function ChatWidget() {
 
           {/* ── Intro banner ── */}
           <div style={{ padding: '20px 20px 0', flexShrink: 0 }}>
-            <div style={{ background: '#F0F9FB', border: '1px solid #CCE9F0', borderRadius: 14, padding: '16px 18px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>SC</span>
+            <div style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: 14, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ color: '#818cf8', fontWeight: 700, fontSize: 13 }}>SC</span>
               </div>
               <div>
-                <p style={{ fontWeight: 600, fontSize: 13, color: '#0F4C57', marginBottom: 3 }}>SmileCare Dental — Sandton &amp; Rosebank</p>
-                <p style={{ fontSize: 12, color: '#2A7A8C', lineHeight: 1.5 }}>Mon – Fri: 07:00 – 18:00 &nbsp;·&nbsp; Sat: 08:00 – 14:00 &nbsp;·&nbsp; Emergency: 011 234 5678</p>
+                <p style={{ fontWeight: 600, fontSize: 13, color: '#c9d1d9', marginBottom: 3 }}>SmileCare Dental — Sandton &amp; Rosebank</p>
+                <p style={{ fontSize: 12, color: '#8b949e', lineHeight: 1.5 }}>Mon – Fri: 07:00 – 18:00 &nbsp;·&nbsp; Sat: 08:00 – 14:00 &nbsp;·&nbsp; Emergency: 011 234 5678</p>
               </div>
             </div>
           </div>
@@ -262,18 +263,18 @@ export default function ChatWidget() {
           {/* ── Messages ── */}
           <div
             className="cw-messages"
-            style={{ flex: 1, overflowY: 'auto', padding: '20px 0 8px', display: 'flex', flexDirection: 'column' }}
+            style={{ flex: 1, overflowY: 'auto', padding: '20px 0 8px', display: 'flex', flexDirection: 'column', background: '#0d1117' }}
           >
             {/* Date pill */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-              <span style={{ fontSize: 11, color: '#9CA3AF', background: '#F3F4F6', padding: '4px 12px', borderRadius: 20, fontWeight: 500 }}>
+              <span style={{ fontSize: 11, color: '#6e7681', background: '#161b22', border: '1px solid #21262d', padding: '4px 12px', borderRadius: 20, fontWeight: 500 }}>
                 Today
               </span>
             </div>
 
-            {/* Agent label — shown once before the first agent message */}
+            {/* Agent label */}
             {messages.length > 0 && (
-              <p style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', paddingLeft: 22, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: '#6e7681', paddingLeft: 22, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {AGENT_NAME}
               </p>
             )}
@@ -285,7 +286,7 @@ export default function ChatWidget() {
             {wasEscalated && !isTyping && <EscalationNotice />}
 
             {error && (
-              <div style={{ margin: '4px 20px', padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, fontSize: 13, color: '#991B1B' }}>
+              <div style={{ margin: '4px 20px', padding: '10px 14px', background: 'rgba(248,81,73,0.08)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 10, fontSize: 13, color: '#f85149' }}>
                 {error}
               </div>
             )}
@@ -294,8 +295,11 @@ export default function ChatWidget() {
           </div>
 
           {/* ── Input bar ── */}
-          <div style={{ borderTop: '1px solid #F0F0F0', padding: '12px 16px', flexShrink: 0, background: '#fff' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, background: '#F9FAFB', borderRadius: 14, border: '1.5px solid #E5E7EB', padding: '10px 14px', transition: 'border-color 0.15s' }}>
+          <div style={{ borderTop: '1px solid #21262d', padding: '12px 16px', flexShrink: 0, background: '#161b22' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, background: '#0d1117', borderRadius: 14, border: '1px solid #30363d', padding: '10px 14px', transition: 'border-color 0.15s' }}
+              onFocusCapture={e => { e.currentTarget.style.borderColor = '#6366f1' }}
+              onBlurCapture={e => { e.currentTarget.style.borderColor = '#30363d' }}
+            >
               <textarea
                 ref={el => { inputRef.current = el; taRef.current = el }}
                 className="cw-textarea"
@@ -312,7 +316,7 @@ export default function ChatWidget() {
                 disabled={!canSend}
                 style={{
                   width: 36, height: 36, borderRadius: '50%', border: 'none',
-                  background: canSend ? TEAL : '#D1D5DB',
+                  background: canSend ? INDIGO : '#21262d',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: canSend ? 'pointer' : 'default',
                   flexShrink: 0, transition: 'background 0.15s',
@@ -323,13 +327,13 @@ export default function ChatWidget() {
             </div>
 
             {/* Footer note */}
-            <p style={{ textAlign: 'center', fontSize: 11, color: '#D1D5DB', marginTop: 10 }}>
+            <p style={{ textAlign: 'center', fontSize: 11, color: '#30363d', marginTop: 10 }}>
               SmileCare Dental &nbsp;·&nbsp; hello@smilecare.co.za
             </p>
           </div>
 
           {/* iPhone safe area */}
-          <div style={{ height: 'env(safe-area-inset-bottom, 0px)', background: '#fff', flexShrink: 0 }} />
+          <div style={{ height: 'env(safe-area-inset-bottom, 0px)', background: '#161b22', flexShrink: 0 }} />
         </div>
       </div>
     </>

@@ -56,7 +56,7 @@ const NAV = [
   },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }) {
   const location = useLocation()
   const { user, logout } = useAuth()
 
@@ -76,12 +76,25 @@ export default function Sidebar() {
       .catch(() => {})
   }, [location.pathname, user])
 
+  // Close sidebar on nav (mobile)
+  function handleNavClick() {
+    if (onClose) onClose()
+  }
+
   const healthColor = { ok: '#3fb950', degraded: '#f0883e', error: '#f85149' }[health] ?? '#6e7681'
   const healthLabel = { ok: 'Connected', degraded: 'Degraded', error: 'Offline' }[health] ?? 'Checking…'
 
   return (
     <aside
-      className="w-56 shrink-0 flex flex-col h-screen"
+      className={[
+        'w-56 shrink-0 flex flex-col h-screen',
+        // Mobile: fixed overlay that slides in/out
+        'fixed inset-y-0 left-0 z-50',
+        'transition-transform duration-200 ease-in-out',
+        open ? 'translate-x-0' : '-translate-x-full',
+        // Desktop: static in-flow, always visible
+        'md:relative md:translate-x-0 md:z-auto',
+      ].join(' ')}
       style={{ background: '#0d1526', borderRight: '1px solid #1e2d45' }}
     >
       {/* Brand */}
@@ -95,10 +108,20 @@ export default function Sidebar() {
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
           </svg>
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold leading-none" style={{ color: '#e6edf3' }}>AI Agency</p>
           <p className="text-xs mt-0.5 truncate" style={{ color: '#8b949e' }}>Admin</p>
         </div>
+        {/* Close button — mobile only */}
+        <button
+          className="md:hidden p-1 rounded"
+          onClick={onClose}
+          style={{ color: '#6e7681' }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
 
       {/* Nav */}
@@ -111,6 +134,7 @@ export default function Sidebar() {
             <Link
               key={to}
               to={to}
+              onClick={handleNavClick}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
               style={active
                 ? { background: 'rgba(99,102,241,0.12)', color: '#818cf8', boxShadow: 'inset 2px 0 0 #6366f1' }

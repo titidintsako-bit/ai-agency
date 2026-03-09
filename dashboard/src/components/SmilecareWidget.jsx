@@ -10,8 +10,8 @@ import axios from 'axios'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const TEAL     = '#0B8FAC'
-const TEAL_D   = '#097a93'
+const INDIGO   = '#6366f1'
+const INDIGO_D = '#4f46e5'
 const API_BASE = '/api'
 const SLUG     = 'smilecare'
 const MIN_MS   = 800
@@ -24,11 +24,8 @@ function fmt(d) { return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-
 // ── Message formatter ─────────────────────────────────────────────────────────
 
 function formatAgentMessage(text) {
-  // Strip bold/italic asterisks
   text = text.replace(/\*+/g, '')
-  // Strip emojis
   text = text.replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F1FF}\u{1F200}-\u{1F2FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]/gu, '')
-  // Collapse multiple spaces left by removals
   text = text.replace(/  +/g, ' ').trim()
   return text
 }
@@ -68,14 +65,14 @@ function TypingDots() {
     <div style={{ padding: '0 0 4px' }}>
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 5,
-        background: '#FFFFFF', border: '1px solid #E5E7EB',
+        background: '#161b22', border: '1px solid #30363d',
         borderRadius: '4px 16px 16px 16px',
         padding: '12px 16px',
       }}>
         {[0, 1, 2].map(i => (
           <span key={i} style={{
             width: 6, height: 6, borderRadius: '50%',
-            background: '#9CA3AF', display: 'block',
+            background: '#6e7681', display: 'block',
             animation: `wcDot 1.3s ease-in-out infinite`,
             animationDelay: `${i * 0.18}s`,
           }} />
@@ -94,7 +91,7 @@ function Bubble({ msg }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 12, animation: 'wcFade 0.18s ease-out' }}>
         <div style={{
-          background: TEAL, color: 'white',
+          background: INDIGO, color: 'white',
           borderRadius: '16px 4px 16px 16px',
           padding: '10px 14px', maxWidth: '80%',
           fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word',
@@ -102,7 +99,7 @@ function Bubble({ msg }) {
         }}>
           {text}
         </div>
-        <span style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>{fmt(msg.ts)}</span>
+        <span style={{ fontSize: 11, color: '#6e7681', marginTop: 4 }}>{fmt(msg.ts)}</span>
       </div>
     )
   }
@@ -110,18 +107,18 @@ function Bubble({ msg }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 12, animation: 'wcFade 0.18s ease-out' }}>
       <div style={{
-        background: '#FFFFFF', border: '1px solid #E5E7EB',
+        background: '#161b22', border: '1px solid #30363d',
         borderRadius: '4px 16px 16px 16px',
         padding: '10px 14px', maxWidth: '80%',
         fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word',
-        color: '#1F2937',
+        color: '#e6edf3',
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}>
         {text.split('\n').map((line, i, arr) => (
           <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
         ))}
       </div>
-      <span style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>{fmt(msg.ts)}</span>
+      <span style={{ fontSize: 11, color: '#6e7681', marginTop: 4 }}>{fmt(msg.ts)}</span>
     </div>
   )
 }
@@ -205,7 +202,7 @@ export default function SmilecareWidget() {
           to   { opacity: 1; transform: translateY(0)    scale(1);    }
         }
         @keyframes wcDot {
-          0%, 60%, 100% { transform: scale(1);   opacity: 0.5; }
+          0%, 60%, 100% { transform: scale(1);   opacity: 0.4; }
           30%            { transform: scale(1.5); opacity: 1;   }
         }
         @keyframes wcFade {
@@ -214,8 +211,8 @@ export default function SmilecareWidget() {
         }
         .sc-messages::-webkit-scrollbar { display: none; }
         .sc-messages { scrollbar-width: none; }
-        .sc-input { caret-color: ${TEAL}; }
-        .sc-input::placeholder { color: #9CA3AF; }
+        .sc-input { caret-color: ${INDIGO}; }
+        .sc-input::placeholder { color: #6e7681; }
         .sc-input:focus { outline: none; }
       `}</style>
 
@@ -225,15 +222,17 @@ export default function SmilecareWidget() {
         {isOpen && (
           <div style={{
             width: 360, height: 520,
-            borderRadius: 16, background: '#FFFFFF',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.14)',
+            borderRadius: 16, background: '#161b22',
+            border: '1px solid #30363d',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
             animation: 'wcSlide 0.22s ease-out',
           }}>
 
             {/* Header */}
             <div style={{
-              background: TEAL, height: 64,
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              height: 64,
               padding: '0 16px', flexShrink: 0,
               borderRadius: '16px 16px 0 0',
               display: 'flex', alignItems: 'center', gap: 12,
@@ -241,10 +240,11 @@ export default function SmilecareWidget() {
               {/* Avatar */}
               <div style={{
                 width: 36, height: 36, borderRadius: '50%',
-                background: 'white', flexShrink: 0,
+                background: 'rgba(255,255,255,0.15)', flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1px solid rgba(255,255,255,0.2)',
               }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: TEAL, fontFamily: 'system-ui, sans-serif' }}>S</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: 'white', fontFamily: 'system-ui, sans-serif' }}>S</span>
               </div>
 
               {/* Name stack */}
@@ -252,21 +252,21 @@ export default function SmilecareWidget() {
                 <p style={{ color: 'white', fontWeight: 600, fontSize: 14, margin: 0, fontFamily: 'system-ui, sans-serif' }}>
                   SmileCare Dental
                 </p>
-                <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, margin: '2px 0 0', fontFamily: 'system-ui, sans-serif' }}>
+                <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, margin: '2px 0 0', fontFamily: 'system-ui, sans-serif' }}>
                   Lerato · Receptionist
                 </p>
               </div>
 
               {/* Online status */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginRight: 10 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ADE80', display: 'block', flexShrink: 0 }} />
-                <span style={{ color: 'white', fontSize: 11, fontFamily: 'system-ui, sans-serif' }}>Online</span>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ADE80', display: 'block', flexShrink: 0, boxShadow: '0 0 6px #4ADE8088' }} />
+                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontFamily: 'system-ui, sans-serif' }}>Online</span>
               </div>
 
               {/* Close */}
               <button
                 onClick={() => setIsOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.85 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.8 }}
               >
                 <CloseX />
               </button>
@@ -275,10 +275,10 @@ export default function SmilecareWidget() {
             {/* Messages */}
             <div
               className="sc-messages"
-              style={{ flex: 1, overflowY: 'auto', padding: '16px', background: '#F8F9FA', display: 'flex', flexDirection: 'column' }}
+              style={{ flex: 1, overflowY: 'auto', padding: '16px', background: '#0d1117', display: 'flex', flexDirection: 'column' }}
             >
               {messages.length === 0 && !typing && (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF', fontSize: 13, fontFamily: 'system-ui, sans-serif' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6e7681', fontSize: 13, fontFamily: 'system-ui, sans-serif' }}>
                   Connecting…
                 </div>
               )}
@@ -287,11 +287,11 @@ export default function SmilecareWidget() {
               {escalated && !typing && (
                 <div style={{
                   margin: '4px 0 8px', padding: '12px 14px',
-                  background: 'white', border: '1px solid #E5E7EB',
-                  borderRadius: 10, fontSize: 13, color: '#374151',
+                  background: 'rgba(240,136,62,0.08)', border: '1px solid rgba(240,136,62,0.2)',
+                  borderRadius: 10, fontSize: 13, color: '#8b949e',
                   lineHeight: 1.5, fontFamily: 'system-ui, sans-serif',
                 }}>
-                  A team member will be in touch shortly. For urgent matters, call <strong>011 234 5678</strong>.
+                  A team member will be in touch shortly. For urgent matters, call <strong style={{ color: '#e6edf3' }}>011 234 5678</strong>.
                 </div>
               )}
               <div ref={bottomRef} />
@@ -299,8 +299,8 @@ export default function SmilecareWidget() {
 
             {/* Input bar */}
             <div style={{
-              borderTop: '1px solid #E5E7EB', height: 60,
-              padding: '0 16px', background: '#FFFFFF', flexShrink: 0,
+              borderTop: '1px solid #21262d', height: 60,
+              padding: '0 16px', background: '#161b22', flexShrink: 0,
               display: 'flex', alignItems: 'center', gap: 10,
             }}>
               <input
@@ -314,7 +314,7 @@ export default function SmilecareWidget() {
                 style={{
                   flex: 1, border: 'none', background: 'transparent',
                   fontSize: 14, fontFamily: 'system-ui, -apple-system, sans-serif',
-                  color: '#1F2937',
+                  color: '#e6edf3',
                 }}
               />
               <button
@@ -322,7 +322,7 @@ export default function SmilecareWidget() {
                 disabled={!canSend}
                 style={{
                   width: 36, height: 36, borderRadius: '50%', border: 'none', flexShrink: 0,
-                  background: canSend ? TEAL : '#E5E7EB',
+                  background: canSend ? INDIGO : '#21262d',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: canSend ? 'pointer' : 'default',
                   transition: 'background 0.15s',
@@ -342,9 +342,9 @@ export default function SmilecareWidget() {
           aria-label={isOpen ? 'Close chat' : 'Chat with SmileCare'}
           style={{
             width: 56, height: 56, borderRadius: '50%', border: 'none', cursor: 'pointer',
-            background: launchHov ? TEAL_D : TEAL,
+            background: launchHov ? INDIGO_D : INDIGO,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 20px rgba(11,143,172,0.35)',
+            boxShadow: '0 4px 20px rgba(99,102,241,0.4)',
             transform: launchHov ? 'scale(1.06)' : 'scale(1)',
             transition: 'background 0.18s, transform 0.18s',
           }}
