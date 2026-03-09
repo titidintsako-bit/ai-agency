@@ -20,8 +20,17 @@ import axios from 'axios'
 
 const API_BASE      = '/api'
 const CLIENT_SLUG   = 'smilecare'
-const AGENT_NAME    = 'Zara'
+const AGENT_NAME    = 'Lerato'
 const CLINIC_NAME   = 'SmileCare Dental'
+
+// ── Message formatter ─────────────────────────────────────────────────────────
+
+function formatAgentMessage(text) {
+  text = text.replace(/\*+/g, '')
+  text = text.replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F1FF}\u{1F200}-\u{1F2FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]/gu, '')
+  text = text.replace(/  +/g, ' ').trim()
+  return text
+}
 
 // Minimum ms to show the typing indicator — feels more natural
 const MIN_TYPING_MS = 900
@@ -46,7 +55,7 @@ function TypingIndicator() {
         className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold"
         style={{ background: 'linear-gradient(135deg, #00a884, #00cf9d)' }}
       >
-        Z
+        L
       </div>
       <div
         className="px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1"
@@ -99,14 +108,14 @@ function Bubble({ msg }) {
         className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold self-end mb-5"
         style={{ background: 'linear-gradient(135deg, #00a884, #00cf9d)' }}
       >
-        Z
+        L
       </div>
       <div className="max-w-xs sm:max-w-sm lg:max-w-md">
         <div
           className="px-3.5 py-2.5 rounded-2xl rounded-bl-sm text-sm leading-relaxed"
           style={{ background: '#1f2c34', color: '#e9edef' }}
         >
-          {msg.content.split('\n').map((line, i, arr) => (
+          {formatAgentMessage(msg.content).split('\n').map((line, i, arr) => (
             <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
           ))}
         </div>
@@ -128,7 +137,7 @@ function EscalationNotice() {
         style={{ background: 'rgba(255, 213, 91, 0.1)', border: '1px solid rgba(255, 213, 91, 0.25)', color: '#ffd55b' }}
       >
         <p className="font-medium">A team member will follow up with you shortly.</p>
-        <p className="text-xs mt-0.5 opacity-75">You can also call us directly on 011 555 0100</p>
+        <p className="text-xs mt-0.5 opacity-75">You can also call us directly on 011 234 5678</p>
       </div>
     </div>
   )
@@ -168,7 +177,7 @@ export default function ChatWidget() {
     setMessages([{
       id:      'greeting',
       role:    'assistant',
-      content: `👋 Hi there! I'm Zara, your SmileCare virtual receptionist.\n\nI can help you with:\n• Booking appointments\n• Our services and pricing\n• Business hours and location\n• Any dental questions you have\n\nHow can I help you today?`,
+      content: `Hi, I'm Lerato, SmileCare's virtual receptionist.\n\nI can help you with:\n• Booking appointments\n• Our services and pricing\n• Business hours and location\n• Any questions about our team or medical aids\n\nHow can I help you today?`,
       ts:      new Date(),
     }])
     setTimeout(() => inputRef.current?.focus(), 300)
@@ -288,7 +297,7 @@ export default function ChatWidget() {
 
           {/* Optional: call icon placeholder */}
           <a
-            href="tel:+27115550100"
+            href="tel:+27112345678"
             className="p-2 rounded-full transition-colors duration-150"
             style={{ color: '#8696a0' }}
             title="Call SmileCare"
