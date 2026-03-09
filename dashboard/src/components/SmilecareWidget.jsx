@@ -1,15 +1,14 @@
 /**
- * SmilecareWidget — Floating production chat widget for SmileCare Dental.
+ * SmilecareWidget — Production chat widget for SmileCare Dental.
  *
- * Renders as a fixed bottom-right launcher. Click to open a 380×520 chat panel.
- * Agent: Lerato, SmileCare's virtual receptionist.
- * API:   POST /api/chat/smilecare  (same pattern as ChatWidget.jsx)
- *
- * Responds to window event 'smilecare:open' to allow external triggers.
+ * Route: embedded in /smilecare (and any other page that imports it)
+ * API:   POST /api/chat/smilecare
  */
 
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const TEAL     = '#0B8FAC'
 const TEAL_D   = '#097a93'
@@ -17,34 +16,47 @@ const API_BASE = '/api'
 const SLUG     = 'smilecare'
 const MIN_MS   = 800
 
-const WELCOME = "Hi there! 👋 I'm Lerato, SmileCare's virtual receptionist. I'm here 24/7 to help you with appointments, pricing, and any questions about our services. How can I help you today?"
+const WELCOME = "Hi, I'm Lerato, SmileCare's virtual receptionist. I'm here to help with appointments, pricing, and any questions about our services. How can I help you today?"
 
 function uid() { return Math.random().toString(36).slice(2, 10) }
 function fmt(d) { return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
 
-// ── Icons ────────────────────────────────────────────────────────────────────
+// ── Message formatter ─────────────────────────────────────────────────────────
 
-function ToothIcon({ size = 22, color = 'white' }) {
+function formatAgentMessage(text) {
+  // Strip bold/italic asterisks
+  text = text.replace(/\*+/g, '')
+  // Strip emojis
+  text = text.replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F1FF}\u{1F200}-\u{1F2FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]/gu, '')
+  // Collapse multiple spaces left by removals
+  text = text.replace(/  +/g, ' ').trim()
+  return text
+}
+
+// ── SVG Icons ─────────────────────────────────────────────────────────────────
+
+function ChatIcon() {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill={color} style={{ display: 'block' }}>
-      <path d="M12 2C9.24 2 7 4.24 7 7c0 1.74.89 3.28 2.25 4.2L8.25 19c-.11.82.49 1.56 1.31 1.63.82.07 1.54-.49 1.66-1.31L12 15.5l.78 3.82c.12.82.84 1.38 1.66 1.31.82-.07 1.42-.81 1.31-1.63l-1-7.8C16.11 10.28 17 8.74 17 7c0-2.76-2.24-5-5-5z" />
+    <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="white" stroke="none" />
     </svg>
   )
 }
 
-function CloseIcon() {
+function SendArrow() {
   return (
-    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2.5} style={{ display: 'block' }}>
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  )
-}
-
-function SendIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width={17} height={17} fill="none" stroke="currentColor" strokeWidth={2} style={{ display: 'block', transform: 'rotate(45deg)' }}>
+    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
       <line x1="22" y1="2" x2="11" y2="13" />
-      <polygon points="22 2 15 22 11 13 2 9 22 2" fill="currentColor" stroke="none" />
+      <polygon points="22 2 15 22 11 13 2 9 22 2" fill="white" stroke="none" />
+    </svg>
+  )
+}
+
+function CloseX() {
+  return (
+    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" style={{ display: 'block' }}>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   )
 }
@@ -53,13 +65,20 @@ function SendIcon() {
 
 function TypingDots() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px' }}>
-      <div style={{ width: 30, height: 30, borderRadius: '50%', background: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <ToothIcon size={15} />
-      </div>
-      <div style={{ background: '#F0F2F5', borderRadius: '16px 16px 16px 4px', padding: '9px 13px', display: 'flex', gap: 4, alignItems: 'center' }}>
+    <div style={{ padding: '0 0 4px' }}>
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        background: '#FFFFFF', border: '1px solid #E5E7EB',
+        borderRadius: '4px 16px 16px 16px',
+        padding: '12px 16px',
+      }}>
         {[0, 1, 2].map(i => (
-          <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#9CA3AF', display: 'block', animation: `wcTyping 1.2s infinite ${i * 0.2}s` }} />
+          <span key={i} style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: '#9CA3AF', display: 'block',
+            animation: `wcDot 1.3s ease-in-out infinite`,
+            animationDelay: `${i * 0.18}s`,
+          }} />
         ))}
       </div>
     </div>
@@ -69,29 +88,40 @@ function TypingDots() {
 // ── Message bubble ────────────────────────────────────────────────────────────
 
 function Bubble({ msg }) {
+  const text = msg.role === 'assistant' ? formatAgentMessage(msg.content) : msg.content
+
   if (msg.role === 'user') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', padding: '3px 16px' }}>
-        <div style={{ background: TEAL, color: 'white', borderRadius: '16px 16px 4px 16px', padding: '10px 14px', maxWidth: '78%', fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word' }}>
-          {msg.content}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 12, animation: 'wcFade 0.18s ease-out' }}>
+        <div style={{
+          background: TEAL, color: 'white',
+          borderRadius: '16px 4px 16px 16px',
+          padding: '10px 14px', maxWidth: '80%',
+          fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+        }}>
+          {text}
         </div>
-        <span style={{ fontSize: 10, color: '#9CA3AF', marginTop: 3 }}>{fmt(msg.ts)}</span>
+        <span style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>{fmt(msg.ts)}</span>
       </div>
     )
   }
+
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, padding: '3px 16px' }}>
-      <div style={{ width: 30, height: 30, borderRadius: '50%', background: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <ToothIcon size={15} />
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 12, animation: 'wcFade 0.18s ease-out' }}>
+      <div style={{
+        background: '#FFFFFF', border: '1px solid #E5E7EB',
+        borderRadius: '4px 16px 16px 16px',
+        padding: '10px 14px', maxWidth: '80%',
+        fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word',
+        color: '#1F2937',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      }}>
+        {text.split('\n').map((line, i, arr) => (
+          <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+        ))}
       </div>
-      <div style={{ maxWidth: '78%' }}>
-        <div style={{ background: '#F0F2F5', color: '#1F2937', borderRadius: '16px 16px 16px 4px', padding: '10px 14px', fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word' }}>
-          {msg.content.split('\n').map((line, i, arr) => (
-            <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
-          ))}
-        </div>
-        <span style={{ fontSize: 10, color: '#9CA3AF', marginTop: 3, display: 'block' }}>{fmt(msg.ts)}</span>
-      </div>
+      <span style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>{fmt(msg.ts)}</span>
     </div>
   )
 }
@@ -106,12 +136,13 @@ export default function SmilecareWidget() {
   const [typing,    setTyping]    = useState(false)
   const [convId,    setConvId]    = useState(null)
   const [escalated, setEscalated] = useState(false)
+  const [launchHov, setLaunchHov] = useState(false)
   const [sessionId]               = useState(() => 'web-' + uid())
 
   const bottomRef = useRef(null)
   const inputRef  = useRef(null)
 
-  // Allow external open trigger (e.g. from hero button)
+  // External open trigger (hero button, contact section, etc.)
   useEffect(() => {
     const handler = () => openWidget()
     window.addEventListener('smilecare:open', handler)
@@ -130,7 +161,7 @@ export default function SmilecareWidget() {
         setMessages([{ id: 'welcome', role: 'assistant', content: WELCOME, ts: new Date() }])
       }, 350)
     }
-    setTimeout(() => inputRef.current?.focus(), 480)
+    setTimeout(() => inputRef.current?.focus(), 400)
   }
 
   async function send() {
@@ -155,7 +186,7 @@ export default function SmilecareWidget() {
       setTyping(false)
       setMessages(prev => [...prev, {
         id: uid(), role: 'assistant', ts: new Date(),
-        content: "Sorry, I'm having connection issues. Please call us on 011 234 5678.",
+        content: "I'm having connection issues right now. Please call us directly on 011 234 5678.",
       }])
     }
   }
@@ -164,121 +195,161 @@ export default function SmilecareWidget() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  const canSend = input.trim() && !typing && !escalated
 
   return (
     <>
       <style>{`
-        @keyframes wcPulse {
-          0%,100% { box-shadow: 0 0 0 0 rgba(11,143,172,0.55); }
-          60%      { box-shadow: 0 0 0 14px rgba(11,143,172,0); }
-        }
         @keyframes wcSlide {
-          from { opacity:0; transform:translateY(18px) scale(0.96); }
-          to   { opacity:1; transform:translateY(0)    scale(1);    }
+          from { opacity: 0; transform: translateY(12px) scale(0.97); }
+          to   { opacity: 1; transform: translateY(0)    scale(1);    }
         }
-        @keyframes wcTyping {
-          0%,60%,100% { transform:translateY(0); }
-          30%          { transform:translateY(-5px); }
+        @keyframes wcDot {
+          0%, 60%, 100% { transform: scale(1);   opacity: 0.5; }
+          30%            { transform: scale(1.5); opacity: 1;   }
         }
-        .wc-input::placeholder { color:#9CA3AF; }
-        .wc-input:focus { outline:none; border-color:${TEAL} !important; }
+        @keyframes wcFade {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0);   }
+        }
+        .sc-messages::-webkit-scrollbar { display: none; }
+        .sc-messages { scrollbar-width: none; }
+        .sc-input { caret-color: ${TEAL}; }
+        .sc-input::placeholder { color: #9CA3AF; }
+        .sc-input:focus { outline: none; }
       `}</style>
 
-      <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 14 }}>
+      <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
 
-        {/* ── Chat panel ── */}
+        {/* ── Chat window ── */}
         {isOpen && (
           <div style={{
-            width: 380, height: 520, borderRadius: 20, background: 'white',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)',
+            width: 360, height: 520,
+            borderRadius: 16, background: '#FFFFFF',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.14)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
             animation: 'wcSlide 0.22s ease-out',
           }}>
 
             {/* Header */}
-            <div style={{ background: TEAL, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-              <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ToothIcon size={22} />
+            <div style={{
+              background: TEAL, height: 64,
+              padding: '0 16px', flexShrink: 0,
+              borderRadius: '16px 16px 0 0',
+              display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              {/* Avatar */}
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'white', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: TEAL, fontFamily: 'system-ui, sans-serif' }}>S</span>
               </div>
+
+              {/* Name stack */}
               <div style={{ flex: 1 }}>
-                <p style={{ color: 'white', fontWeight: 700, fontSize: 15, margin: 0 }}>SmileCare Dental</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ADE80', display: 'inline-block' }} />
-                  <span style={{ color: 'rgba(255,255,255,0.88)', fontSize: 12 }}>Lerato · Virtual Receptionist · Online now</span>
-                </div>
+                <p style={{ color: 'white', fontWeight: 600, fontSize: 14, margin: 0, fontFamily: 'system-ui, sans-serif' }}>
+                  SmileCare Dental
+                </p>
+                <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, margin: '2px 0 0', fontFamily: 'system-ui, sans-serif' }}>
+                  Lerato · Receptionist
+                </p>
               </div>
+
+              {/* Online status */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginRight: 10 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ADE80', display: 'block', flexShrink: 0 }} />
+                <span style={{ color: 'white', fontSize: 11, fontFamily: 'system-ui, sans-serif' }}>Online</span>
+              </div>
+
+              {/* Close */}
               <button
                 onClick={() => setIsOpen(false)}
-                style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.85 }}
               >
-                <CloseIcon />
+                <CloseX />
               </button>
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0', display: 'flex', flexDirection: 'column', gap: 2, background: '#FAFAFA' }}>
+            <div
+              className="sc-messages"
+              style={{ flex: 1, overflowY: 'auto', padding: '16px', background: '#F8F9FA', display: 'flex', flexDirection: 'column' }}
+            >
               {messages.length === 0 && !typing && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9CA3AF', fontSize: 13 }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF', fontSize: 13, fontFamily: 'system-ui, sans-serif' }}>
                   Connecting…
                 </div>
               )}
               {messages.map(m => <Bubble key={m.id} msg={m} />)}
               {typing && <TypingDots />}
               {escalated && !typing && (
-                <div style={{ margin: '8px 16px', padding: '12px 16px', background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 12, fontSize: 13, color: '#92400E', textAlign: 'center' }}>
-                  A team member will follow up shortly. You can also call <strong>011 234 5678</strong>.
+                <div style={{
+                  margin: '4px 0 8px', padding: '12px 14px',
+                  background: 'white', border: '1px solid #E5E7EB',
+                  borderRadius: 10, fontSize: 13, color: '#374151',
+                  lineHeight: 1.5, fontFamily: 'system-ui, sans-serif',
+                }}>
+                  A team member will be in touch shortly. For urgent matters, call <strong>011 234 5678</strong>.
                 </div>
               )}
               <div ref={bottomRef} />
             </div>
 
             {/* Input bar */}
-            <div style={{ borderTop: '1px solid #E5E7EB', padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'center', background: 'white', flexShrink: 0 }}>
+            <div style={{
+              borderTop: '1px solid #E5E7EB', height: 60,
+              padding: '0 16px', background: '#FFFFFF', flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
               <input
                 ref={inputRef}
-                className="wc-input"
+                className="sc-input"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={onKey}
                 disabled={escalated}
-                placeholder={escalated ? 'Team will follow up…' : 'Type a message...'}
-                style={{ flex: 1, border: '1.5px solid #E5E7EB', borderRadius: 24, padding: '9px 16px', fontSize: 14, fontFamily: 'inherit', background: 'white', color: '#1F2937', transition: 'border-color 0.15s' }}
+                placeholder={escalated ? 'Team will follow up…' : 'Message SmileCare...'}
+                style={{
+                  flex: 1, border: 'none', background: 'transparent',
+                  fontSize: 14, fontFamily: 'system-ui, -apple-system, sans-serif',
+                  color: '#1F2937',
+                }}
               />
               <button
                 onClick={send}
-                disabled={!input.trim() || typing || escalated}
+                disabled={!canSend}
                 style={{
-                  width: 40, height: 40, borderRadius: '50%', border: 'none', flexShrink: 0,
-                  background: input.trim() && !typing && !escalated ? TEAL : '#E5E7EB',
-                  color: input.trim() && !typing && !escalated ? 'white' : '#9CA3AF',
+                  width: 36, height: 36, borderRadius: '50%', border: 'none', flexShrink: 0,
+                  background: canSend ? TEAL : '#E5E7EB',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: input.trim() && !typing && !escalated ? 'pointer' : 'default',
+                  cursor: canSend ? 'pointer' : 'default',
                   transition: 'background 0.15s',
                 }}
               >
-                <SendIcon />
+                <SendArrow />
               </button>
             </div>
           </div>
         )}
 
-        {/* ── Launcher button ── */}
+        {/* ── Launcher ── */}
         <button
           onClick={isOpen ? () => setIsOpen(false) : openWidget}
+          onMouseEnter={() => setLaunchHov(true)}
+          onMouseLeave={() => setLaunchHov(false)}
+          aria-label={isOpen ? 'Close chat' : 'Chat with SmileCare'}
           style={{
             width: 56, height: 56, borderRadius: '50%', border: 'none', cursor: 'pointer',
-            background: TEAL, color: 'white',
+            background: launchHov ? TEAL_D : TEAL,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: `0 4px 18px rgba(11,143,172,0.45)`,
-            animation: isOpen ? 'none' : 'wcPulse 2.5s infinite',
-            transition: `background 0.2s, transform 0.15s`,
+            boxShadow: '0 4px 20px rgba(11,143,172,0.35)',
+            transform: launchHov ? 'scale(1.06)' : 'scale(1)',
+            transition: 'background 0.18s, transform 0.18s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = TEAL_D; e.currentTarget.style.transform = 'scale(1.07)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = TEAL;   e.currentTarget.style.transform = 'scale(1)' }}
-          aria-label={isOpen ? 'Close chat' : 'Chat with Lerato'}
         >
-          {isOpen ? <CloseIcon /> : <ToothIcon size={26} />}
+          {isOpen ? <CloseX /> : <ChatIcon />}
         </button>
       </div>
     </>
