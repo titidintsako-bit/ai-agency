@@ -74,7 +74,9 @@ export default function Conversations() {
         <div className="flex items-center gap-2 flex-wrap">
           <select value={pendingStatus} onChange={e => setPendingStatus(e.target.value)}
             className="px-3 py-1.5 rounded-lg text-sm outline-none"
-            style={{ background: '#161b22', border: '1px solid #30363d', color: '#e6edf3' }}>
+            style={{ background: '#161b22', border: '1px solid #30363d', color: '#e6edf3' }}
+            onFocus={e => { e.currentTarget.style.borderColor = '#6366f1' }}
+            onBlur={e  => { e.currentTarget.style.borderColor = '#30363d' }}>
             <option value="">All statuses</option>
             <option value="active">Active</option>
             <option value="completed">Completed</option>
@@ -85,10 +87,14 @@ export default function Conversations() {
             onChange={e => setPendingClientSlug(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && applyFilters()}
             className="px-3 py-1.5 rounded-lg text-sm outline-none w-36"
-            style={{ background: '#161b22', border: '1px solid #30363d', color: '#e6edf3' }} />
-          <button onClick={applyFilters} className="px-3 py-1.5 rounded-lg text-sm"
-            style={{ background: '#21262d', color: '#e6edf3', border: '1px solid #30363d' }}>
-            Filter
+            style={{ background: '#161b22', border: '1px solid #30363d', color: '#e6edf3' }}
+            onFocus={e => { e.currentTarget.style.borderColor = '#6366f1' }}
+            onBlur={e  => { e.currentTarget.style.borderColor = '#30363d' }} />
+          <button onClick={applyFilters} className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-150"
+            style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.25)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.15)' }}>
+            Apply
           </button>
         </div>
       </div>
@@ -102,9 +108,9 @@ export default function Conversations() {
 
       <div className="flex-1 overflow-auto">
         {/* Column headers */}
-        <div className="grid text-xs font-medium uppercase tracking-wider sticky top-0"
-          style={{ gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr auto', padding: '10px 16px',
-            background: '#0d1117', borderBottom: '1px solid #21262d', color: '#6e7681' }}>
+        <div className="grid text-xs font-semibold uppercase tracking-widest sticky top-0"
+          style={{ gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr auto', padding: '10px 18px',
+            background: '#0d1117', borderBottom: '1px solid #21262d', color: '#6e7681', letterSpacing: '0.07em' }}>
           <span>User</span>
           <span>Client</span>
           <span>Agent</span>
@@ -130,12 +136,12 @@ export default function Conversations() {
               const start = new Date(c.started_at)
               return (
                 <Link key={c.id} to={`/conversations/${c.id}`}
-                  className="grid items-center text-sm transition-colors duration-150"
+                  className="grid items-center text-sm transition-all duration-150"
                   style={{ gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr auto',
                     padding: '12px 16px', borderBottom: '1px solid #21262d',
-                    color: '#e6edf3', textDecoration: 'none' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+                    color: '#e6edf3', textDecoration: 'none', borderLeft: '2px solid transparent' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.04)'; e.currentTarget.style.borderLeftColor = '#6366f1' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeftColor = 'transparent' }}>
                   <span className="truncate">{c.user_identifier || 'Anonymous'}</span>
                   <span className="truncate" style={{ color: '#8b949e' }}>{c.clients?.name || '—'}</span>
                   <span style={{ color: '#8b949e' }}>{c.agents?.name || '—'}</span>

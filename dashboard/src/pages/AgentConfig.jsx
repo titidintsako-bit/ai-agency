@@ -353,11 +353,14 @@ export default function AgentConfig() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className="px-4 py-2 text-sm transition-colors duration-150"
+            className="px-4 py-2.5 text-sm font-medium transition-all duration-150"
             style={{
               color: tab === key ? '#e6edf3' : '#8b949e',
               borderBottom: tab === key ? '2px solid #6366f1' : '2px solid transparent',
+              marginBottom: -1,
             }}
+            onMouseEnter={e => { if (tab !== key) e.currentTarget.style.color = '#c9d1d9' }}
+            onMouseLeave={e => { if (tab !== key) e.currentTarget.style.color = '#8b949e' }}
           >
             {label}
           </button>

@@ -111,10 +111,12 @@ export default function Sidebar() {
             <Link
               key={to}
               to={to}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors duration-150"
-              style={active ? { background: 'rgba(99,102,241,0.15)', color: '#818cf8' } : { color: '#8b949e' }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#e6edf3' }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.color = '#8b949e' }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150"
+              style={active
+                ? { background: 'rgba(99,102,241,0.12)', color: '#818cf8', boxShadow: 'inset 2px 0 0 #6366f1' }
+                : { color: '#8b949e' }}
+              onMouseEnter={e => { if (!active) { e.currentTarget.style.color = '#e6edf3'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' } }}
+              onMouseLeave={e => { if (!active) { e.currentTarget.style.color = '#8b949e'; e.currentTarget.style.background = 'transparent' } }}
             >
               {icon}
               <span>{label}</span>

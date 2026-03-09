@@ -63,14 +63,19 @@ function PeriodToggle({ value, onChange }) {
 function Panel({ title, children, action }) {
   return (
     <div
-      className="rounded-xl p-5 space-y-4"
+      className="rounded-xl overflow-hidden"
       style={{ background: CHART_THEME.bg, border: `1px solid ${CHART_THEME.border}` }}
     >
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div
+        className="flex items-center justify-between gap-3 flex-wrap px-5 py-4"
+        style={{ borderBottom: `1px solid ${CHART_THEME.border}` }}
+      >
         <p className="text-sm font-semibold" style={{ color: '#e6edf3' }}>{title}</p>
         {action}
       </div>
-      {children}
+      <div className="p-5">
+        {children}
+      </div>
     </div>
   )
 }

@@ -33,31 +33,35 @@ export default function Login() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4"
-      style={{ background: '#0d1117' }}
+      style={{ background: '#0d1117', backgroundImage: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.08) 0%, transparent 60%)' }}
     >
       {/* Brand */}
-      <div className="mb-8 flex flex-col items-center gap-3">
+      <div className="mb-8 flex flex-col items-center gap-4">
         <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}
+          className="w-14 h-14 rounded-2xl flex items-center justify-center"
+          style={{
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            boxShadow: '0 8px 32px rgba(99,102,241,0.3)',
+          }}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} className="w-6 h-6">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
-            <path d="M8 12h8M12 8v8" strokeLinecap="round"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={1.8} className="w-7 h-7">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
           </svg>
         </div>
         <div className="text-center">
           <h1 className="text-xl font-semibold" style={{ color: '#e6edf3' }}>AI Agency</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#8b949e' }}>Admin Dashboard</p>
+          <p className="text-sm mt-1" style={{ color: '#6e7681' }}>Admin Dashboard</p>
         </div>
       </div>
 
       {/* Card */}
       <div
         className="w-full max-w-sm rounded-2xl p-8"
-        style={{ background: '#161b22', border: '1px solid #21262d' }}
+        style={{ background: '#161b22', border: '1px solid #21262d', boxShadow: '0 24px 48px rgba(0,0,0,0.4)' }}
       >
-        <h2 className="text-lg font-semibold mb-6" style={{ color: '#e6edf3' }}>Sign in</h2>
+        <h2 className="text-lg font-semibold mb-1" style={{ color: '#e6edf3' }}>Welcome back</h2>
+        <p className="text-sm mb-6" style={{ color: '#6e7681' }}>Sign in to your dashboard</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}

@@ -6,9 +6,9 @@ import { getEscalations, updateEscalation } from '../api/dashboard'
 // ---------------------------------------------------------------------------
 
 const STATUS_STYLE = {
-  pending:  { bg: 'rgba(240,136,62,0.12)',  text: '#f0883e' },
-  reviewed: { bg: 'rgba(99,102,241,0.12)',  text: '#818cf8' },
-  resolved: { bg: 'rgba(63,185,80,0.12)',   text: '#3fb950' },
+  pending:  { bg: 'rgba(240,136,62,0.12)',  text: '#f0883e', accent: '#f0883e' },
+  reviewed: { bg: 'rgba(99,102,241,0.12)',  text: '#818cf8', accent: '#6366f1' },
+  resolved: { bg: 'rgba(63,185,80,0.12)',   text: '#3fb950', accent: '#3fb950' },
 }
 
 function Badge({ status }) {
@@ -39,6 +39,8 @@ function EscalCard({ esc, onUpdate }) {
   const [saving, setSaving] = useState(false)
   const [err, setErr]       = useState(null)
 
+  const s = STATUS_STYLE[esc.status] || STATUS_STYLE.pending
+
   async function submit(status) {
     setSaving(true)
     setErr(null)
@@ -56,7 +58,7 @@ function EscalCard({ esc, onUpdate }) {
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ background: '#161b22', border: '1px solid #21262d' }}
+      style={{ background: '#161b22', border: '1px solid #21262d', borderLeft: `3px solid ${s.accent}` }}
     >
       {/* Card header */}
       <button

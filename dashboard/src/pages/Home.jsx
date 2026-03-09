@@ -266,34 +266,36 @@ export default function Home() {
 
         {/* Agent grid */}
         <div
-          className="rounded-xl p-5 space-y-3"
+          className="rounded-xl overflow-hidden"
           style={{ background: '#161b22', border: '1px solid #21262d' }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #21262d' }}>
             <p className="text-sm font-semibold" style={{ color: '#e6edf3' }}>Agent Status</p>
-            <Link to="/conversations" className="text-xs" style={{ color: '#6366f1' }}>
-              All conversations →
+            <Link to="/conversations" className="text-xs transition-colors duration-150" style={{ color: '#6366f1' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#818cf8' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#6366f1' }}>
+              All →
             </Link>
           </div>
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: '#21262d' }} />)}
-            </div>
-          ) : agents.length === 0 ? (
-            <p className="text-sm py-4 text-center" style={{ color: '#6e7681' }}>No agents configured.</p>
-          ) : (
-            <div className="space-y-2">
-              {agents.map(a => <AgentCard key={a.id} agent={a} />)}
-            </div>
-          )}
+          <div className="p-4 space-y-2">
+            {loading ? (
+              <div className="space-y-2">
+                {[1, 2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: '#21262d' }} />)}
+              </div>
+            ) : agents.length === 0 ? (
+              <p className="text-sm py-4 text-center" style={{ color: '#6e7681' }}>No agents configured.</p>
+            ) : (
+              agents.map(a => <AgentCard key={a.id} agent={a} />)
+            )}
+          </div>
         </div>
 
         {/* Live activity feed */}
         <div
-          className="xl:col-span-2 rounded-xl p-5 space-y-3"
+          className="xl:col-span-2 rounded-xl overflow-hidden"
           style={{ background: '#161b22', border: '1px solid #21262d' }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #21262d' }}>
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold" style={{ color: '#e6edf3' }}>Live Activity</p>
               <span
@@ -303,41 +305,45 @@ export default function Home() {
                 {stats?.conversations.active_now ?? 0} active
               </span>
             </div>
-            <Link to="/conversations" className="text-xs" style={{ color: '#6366f1' }}>
+            <Link to="/conversations" className="text-xs transition-colors duration-150" style={{ color: '#6366f1' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#818cf8' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#6366f1' }}>
               View all →
             </Link>
           </div>
 
-          {loading ? (
-            <div className="space-y-1">
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="h-14 rounded-lg animate-pulse" style={{ background: '#21262d' }} />
-              ))}
-            </div>
-          ) : conversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 gap-2">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#30363d" strokeWidth={1.5} className="w-10 h-10">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              <p style={{ color: '#6e7681' }}>No conversations yet. Send a test message!</p>
-            </div>
-          ) : (
-            <div className="space-y-1 max-h-80 overflow-y-auto pr-1">
-              {conversations.map(c => (
-                <FeedRow key={c.id} conv={c} isNew={newIds.has(c.id)} />
-              ))}
-            </div>
-          )}
+          <div className="p-3">
+            {loading ? (
+              <div className="space-y-1">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className="h-14 rounded-lg animate-pulse" style={{ background: '#21262d' }} />
+                ))}
+              </div>
+            ) : conversations.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#30363d" strokeWidth={1.5} className="w-10 h-10">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <p style={{ color: '#6e7681' }}>No conversations yet. Send a test message!</p>
+              </div>
+            ) : (
+              <div className="space-y-0.5 max-h-80 overflow-y-auto pr-1">
+                {conversations.map(c => (
+                  <FeedRow key={c.id} conv={c} isNew={newIds.has(c.id)} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Pending escalations */}
       {(escalations.length > 0 || loading) && (
         <div
-          className="rounded-xl p-5 space-y-3"
-          style={{ background: '#161b22', border: '1px solid rgba(248,81,73,0.2)' }}
+          className="rounded-xl overflow-hidden"
+          style={{ background: '#161b22', border: '1px solid rgba(248,81,73,0.2)', borderLeft: '3px solid #f85149' }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(248,81,73,0.12)' }}>
             <div className="flex items-center gap-2">
               <svg viewBox="0 0 24 24" fill="none" stroke="#f85149" strokeWidth={2} className="w-4 h-4">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
@@ -356,7 +362,7 @@ export default function Home() {
               Review all →
             </Link>
           </div>
-          <div className="space-y-2">
+          <div className="p-4 space-y-2">
             {escalations.slice(0, 3).map(e => <EscalRow key={e.id} esc={e} />)}
             {escalations.length > 3 && (
               <p className="text-xs text-center py-1" style={{ color: '#6e7681' }}>
