@@ -3,14 +3,6 @@
  *
  * Route:  /chat/smilecare  (no auth required)
  * API:    POST /api/chat/smilecare
- *
- * Features:
- *  - WhatsApp-style chat bubbles
- *  - Typing indicator with animated dots
- *  - Conversation ID maintained throughout session
- *  - Timestamps on every message
- *  - Escalation notice when agent flags for human review
- *  - Fully mobile-responsive
  */
 
 import { useEffect, useRef, useState } from 'react'
@@ -18,12 +10,17 @@ import axios from 'axios'
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const API_BASE      = '/api'
-const CLIENT_SLUG   = 'smilecare'
-const AGENT_NAME    = 'Lerato'
-const CLINIC_NAME   = 'SmileCare Dental'
+const API_BASE    = '/api'
+const CLIENT_SLUG = 'smilecare'
+const AGENT_NAME  = 'Lerato'
+const TEAL        = '#0B8FAC'
+const TEAL_D      = '#097a93'
+const MIN_MS      = 900
 
-// ── Message formatter ─────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function uid() { return 'w-' + Math.random().toString(36).slice(2, 10) }
+function fmtTime(d) { return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
 
 function formatAgentMessage(text) {
   text = text.replace(/\*+/g, '')
@@ -32,133 +29,101 @@ function formatAgentMessage(text) {
   return text
 }
 
-// Minimum ms to show the typing indicator — feels more natural
-const MIN_TYPING_MS = 900
+// ── Icons ─────────────────────────────────────────────────────────────────────
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function fmtTime(date) {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
-function genSessionId() {
-  return 'web-' + Math.random().toString(36).slice(2, 10)
-}
-
-// ── Typing indicator ──────────────────────────────────────────────────────────
-
-function TypingIndicator() {
+function PhoneIcon() {
   return (
-    <div className="flex items-end gap-2 px-4 py-1">
-      {/* Avatar */}
-      <div
-        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold"
-        style={{ background: 'linear-gradient(135deg, #00a884, #00cf9d)' }}
-      >
-        L
-      </div>
-      <div
-        className="px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1"
-        style={{ background: '#1f2c34' }}
-      >
+    <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.8a16 16 0 0 0 6.08 6.08l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+    </svg>
+  )
+}
+
+function SendIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="22 2 15 22 11 13 2 9 22 2" fill="white" />
+    </svg>
+  )
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function TypingDots() {
+  return (
+    <div style={{ paddingLeft: 20, paddingBottom: 8, animation: 'cwFade 0.2s ease-out' }}>
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        background: '#fff', border: '1px solid #E5E7EB',
+        borderRadius: '4px 18px 18px 18px',
+        padding: '11px 16px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+      }}>
         {[0, 1, 2].map(i => (
-          <span
-            key={i}
-            className="w-2 h-2 rounded-full"
-            style={{
-              background: '#8696a0',
-              animation: `bounce 1.2s infinite ${i * 0.2}s`,
-            }}
-          />
+          <span key={i} style={{
+            width: 6, height: 6, borderRadius: '50%', background: '#9CA3AF',
+            display: 'block',
+            animation: `cwDot 1.3s ease-in-out infinite`,
+            animationDelay: `${i * 0.18}s`,
+          }} />
         ))}
       </div>
     </div>
   )
 }
 
-// ── Message bubble ────────────────────────────────────────────────────────────
-
-function Bubble({ msg }) {
-  const isUser = msg.role === 'user'
-
-  if (isUser) {
-    return (
-      <div className="flex justify-end px-4 py-0.5">
-        <div className="max-w-xs sm:max-w-sm lg:max-w-md">
-          <div
-            className="px-3.5 py-2.5 rounded-2xl rounded-br-sm text-sm leading-relaxed"
-            style={{ background: '#005c4b', color: '#e9edef' }}
-          >
-            {msg.content.split('\n').map((line, i, arr) => (
-              <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
-            ))}
-          </div>
-          <p className="text-right mt-0.5 pr-1 text-xs" style={{ color: '#8696a0' }}>
-            {fmtTime(msg.ts)}
-          </p>
-        </div>
-      </div>
-    )
-  }
-
+function AgentBubble({ msg }) {
+  const text = formatAgentMessage(msg.content)
   return (
-    <div className="flex items-end gap-2 px-4 py-0.5">
-      {/* Agent avatar */}
-      <div
-        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold self-end mb-5"
-        style={{ background: 'linear-gradient(135deg, #00a884, #00cf9d)' }}
-      >
-        L
+    <div style={{ paddingLeft: 20, paddingRight: 56, paddingBottom: 10, animation: 'cwFade 0.2s ease-out' }}>
+      <div style={{
+        background: '#fff', border: '1px solid #E5E7EB',
+        borderRadius: '4px 18px 18px 18px',
+        padding: '12px 16px', fontSize: 14, lineHeight: 1.6,
+        color: '#111827', boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        wordBreak: 'break-word',
+      }}>
+        {text.split('\n').map((line, i, arr) => (
+          <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+        ))}
       </div>
-      <div className="max-w-xs sm:max-w-sm lg:max-w-md">
-        <div
-          className="px-3.5 py-2.5 rounded-2xl rounded-bl-sm text-sm leading-relaxed"
-          style={{ background: '#1f2c34', color: '#e9edef' }}
-        >
-          {formatAgentMessage(msg.content).split('\n').map((line, i, arr) => (
-            <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
-          ))}
-        </div>
-        <p className="mt-0.5 pl-1 text-xs" style={{ color: '#8696a0' }}>
-          {fmtTime(msg.ts)}
-        </p>
-      </div>
+      <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 5, paddingLeft: 2 }}>{fmtTime(msg.ts)}</p>
     </div>
   )
 }
 
-// ── Escalation notice ─────────────────────────────────────────────────────────
+function UserBubble({ msg }) {
+  return (
+    <div style={{ paddingRight: 20, paddingLeft: 56, paddingBottom: 10, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', animation: 'cwFade 0.2s ease-out' }}>
+      <div style={{
+        background: TEAL, color: '#fff',
+        borderRadius: '18px 4px 18px 18px',
+        padding: '12px 16px', fontSize: 14, lineHeight: 1.6,
+        wordBreak: 'break-word',
+      }}>
+        {msg.content.split('\n').map((line, i, arr) => (
+          <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+        ))}
+      </div>
+      <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 5, paddingRight: 2 }}>{fmtTime(msg.ts)}</p>
+    </div>
+  )
+}
+
+function Bubble({ msg }) {
+  return msg.role === 'user' ? <UserBubble msg={msg} /> : <AgentBubble msg={msg} />
+}
 
 function EscalationNotice() {
   return (
-    <div className="mx-4 my-2">
-      <div
-        className="rounded-xl px-4 py-3 text-sm text-center"
-        style={{ background: 'rgba(255, 213, 91, 0.1)', border: '1px solid rgba(255, 213, 91, 0.25)', color: '#ffd55b' }}
-      >
-        <p className="font-medium">A team member will follow up with you shortly.</p>
-        <p className="text-xs mt-0.5 opacity-75">You can also call us directly on 011 234 5678</p>
-      </div>
+    <div style={{ margin: '4px 20px 12px', padding: '14px 16px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12 }}>
+      <p style={{ fontSize: 13, color: '#92400E', fontWeight: 600, margin: '0 0 2px' }}>Our team has been notified</p>
+      <p style={{ fontSize: 13, color: '#B45309', margin: 0 }}>A team member will follow up with you shortly. For urgent matters, call <strong>011 234 5678</strong>.</p>
     </div>
   )
 }
 
-// ── Date divider ──────────────────────────────────────────────────────────────
-
-function DateDivider({ label }) {
-  return (
-    <div className="flex items-center justify-center py-3">
-      <span
-        className="text-xs px-3 py-1 rounded-full"
-        style={{ background: '#1f2c34', color: '#8696a0' }}
-      >
-        {label}
-      </span>
-    </div>
-  )
-}
-
-// ── Main widget ───────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function ChatWidget() {
   const [messages,       setMessages]       = useState([])
@@ -166,235 +131,206 @@ export default function ChatWidget() {
   const [isTyping,       setIsTyping]       = useState(false)
   const [conversationId, setConversationId] = useState(null)
   const [wasEscalated,   setWasEscalated]   = useState(false)
-  const [sessionId]                         = useState(() => genSessionId())
+  const [sessionId]                         = useState(() => uid())
   const [error,          setError]          = useState(null)
 
-  const bottomRef  = useRef(null)
-  const inputRef   = useRef(null)
+  const bottomRef = useRef(null)
+  const inputRef  = useRef(null)
+  const taRef     = useRef(null)
 
-  // Add greeting on mount
   useEffect(() => {
-    setMessages([{
-      id:      'greeting',
-      role:    'assistant',
-      content: `Hi, I'm Lerato, SmileCare's virtual receptionist.\n\nI can help you with:\n• Booking appointments\n• Our services and pricing\n• Business hours and location\n• Any questions about our team or medical aids\n\nHow can I help you today?`,
-      ts:      new Date(),
-    }])
-    setTimeout(() => inputRef.current?.focus(), 300)
+    setTimeout(() => {
+      setMessages([{
+        id:      'greeting',
+        role:    'assistant',
+        content: "Hi, I'm Lerato, SmileCare's virtual receptionist.\n\nI can help you book an appointment, answer questions about our services and pricing, or connect you with our team.\n\nHow can I help you today?",
+        ts:      new Date(),
+      }])
+    }, 400)
+    setTimeout(() => inputRef.current?.focus(), 500)
   }, [])
 
-  // Scroll to bottom whenever messages update
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
+  function autoGrow(el) {
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+  }
+
   async function sendMessage() {
     const text = input.trim()
     if (!text || isTyping || wasEscalated) return
-
     setInput('')
     setError(null)
-
-    // Add user message immediately
-    const userMsg = { id: Date.now(), role: 'user', content: text, ts: new Date() }
-    setMessages(prev => [...prev, userMsg])
-
-    const typingStart = Date.now()
+    if (taRef.current) { taRef.current.style.height = 'auto' }
+    setMessages(prev => [...prev, { id: uid(), role: 'user', content: text, ts: new Date() }])
+    const t0 = Date.now()
     setIsTyping(true)
-
     try {
-      const { data } = await axios.post(
-        `${API_BASE}/chat/${CLIENT_SLUG}`,
-        {
-          message:         text,
-          conversation_id: conversationId,
-          channel:         'web',
-          user_identifier: sessionId,
-        }
-      )
-
-      // Ensure typing indicator shows for at least MIN_TYPING_MS
-      const elapsed = Date.now() - typingStart
-      if (elapsed < MIN_TYPING_MS) {
-        await new Promise(r => setTimeout(r, MIN_TYPING_MS - elapsed))
-      }
-
+      const { data } = await axios.post(`${API_BASE}/chat/${CLIENT_SLUG}`, {
+        message: text, conversation_id: conversationId,
+        channel: 'web', user_identifier: sessionId,
+      })
+      const wait = MIN_MS - (Date.now() - t0)
+      if (wait > 0) await new Promise(r => setTimeout(r, wait))
       setIsTyping(false)
-
       if (!conversationId) setConversationId(data.conversation_id)
-
-      setMessages(prev => [
-        ...prev,
-        {
-          id:      data.conversation_id + Date.now(),
-          role:    'assistant',
-          content: data.message,
-          ts:      new Date(),
-        },
-      ])
-
+      setMessages(prev => [...prev, { id: uid(), role: 'assistant', content: data.message, ts: new Date() }])
       if (data.was_escalated) setWasEscalated(true)
-
     } catch (err) {
       setIsTyping(false)
-      const detail = err.response?.data?.detail || 'Connection error. Please try again.'
-      setError(detail)
+      setError(err.response?.data?.detail || 'Connection issue. Please try again or call 011 234 5678.')
     }
   }
 
   function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  const canSend = input.trim() && !isTyping && !wasEscalated
 
   return (
     <>
-      {/* Bounce animation for typing dots */}
       <style>{`
-        @keyframes bounce {
-          0%, 60%, 100% { transform: translateY(0); }
-          30% { transform: translateY(-6px); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        @keyframes cwFade {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes cwDot {
+          0%, 60%, 100% { transform: scale(1);    opacity: 0.45; }
+          30%            { transform: scale(1.55); opacity: 1;    }
+        }
+        .cw-messages::-webkit-scrollbar { width: 4px; }
+        .cw-messages::-webkit-scrollbar-track { background: transparent; }
+        .cw-messages::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
+        .cw-textarea { resize: none; outline: none; border: none; background: transparent; width: 100%; font-family: inherit; font-size: 14px; color: #111827; line-height: 1.5; min-height: 22px; max-height: 120px; }
+        .cw-textarea::placeholder { color: #9CA3AF; }
+        .cw-send:hover { background: ${TEAL_D} !important; }
+        .cw-phone:hover { color: ${TEAL} !important; }
       `}</style>
 
-      <div
-        className="flex flex-col h-screen w-full"
-        style={{ background: '#0b141a', maxWidth: '100vw' }}
-      >
-        {/* ── Header ── */}
-        <div
-          className="flex items-center gap-3 px-4 py-3 shrink-0"
-          style={{ background: '#1f2c34', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }}
-        >
-          {/* Logo / Avatar */}
-          <div
-            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: 'linear-gradient(135deg, #00a884, #00cf9d)' }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} className="w-6 h-6">
-              <path d="M12 2a4 4 0 0 1 4 4c0 1.5-.8 2.8-2 3.5V12l2 2-2 2v1a4 4 0 0 1-8 0v-1l-2-2 2-2V9.5A4 4 0 0 1 8 6a4 4 0 0 1 4-4z"/>
-            </svg>
-          </div>
+      {/* Page shell — light grey on desktop, white on mobile */}
+      <div style={{ minHeight: '100vh', background: '#F3F4F6', display: 'flex', alignItems: 'stretch', justifyContent: 'center', fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
 
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm leading-none" style={{ color: '#e9edef' }}>
-              {CLINIC_NAME}
-            </p>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ background: '#00a884', boxShadow: '0 0 5px #00a88488' }}
-              />
-              <span className="text-xs" style={{ color: '#8696a0' }}>
-                {AGENT_NAME} is online
-              </span>
+        {/* Chat card */}
+        <div style={{ width: '100%', maxWidth: 520, background: '#fff', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 32px rgba(0,0,0,0.10)', minHeight: '100vh' }}>
+
+          {/* ── Header ── */}
+          <div style={{ borderBottom: '1px solid #F0F0F0', padding: '0 20px', height: 72, display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+
+            {/* Logo */}
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: 17, letterSpacing: '-0.5px' }}>SC</span>
             </div>
-          </div>
 
-          {/* Optional: call icon placeholder */}
-          <a
-            href="tel:+27112345678"
-            className="p-2 rounded-full transition-colors duration-150"
-            style={{ color: '#8696a0' }}
-            title="Call SmileCare"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.8a16 16 0 0 0 6.08 6.08l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-            </svg>
-          </a>
-        </div>
-
-        {/* ── Message feed ── */}
-        <div
-          className="flex-1 overflow-y-auto py-3 space-y-0.5"
-          style={{ background: '#0b141a' }}
-        >
-          <DateDivider label="Today" />
-
-          {messages.map(msg => <Bubble key={msg.id} msg={msg} />)}
-
-          {isTyping && <TypingIndicator />}
-
-          {wasEscalated && !isTyping && <EscalationNotice />}
-
-          {error && (
-            <div className="px-4 py-1">
-              <div
-                className="text-xs px-3 py-2 rounded-lg text-center"
-                style={{ background: 'rgba(248,81,73,0.1)', color: '#f85149', border: '1px solid rgba(248,81,73,0.2)' }}
-              >
-                {error}
+            {/* Name + status */}
+            <div style={{ flex: 1 }}>
+              <p style={{ fontWeight: 700, fontSize: 15, color: '#111827', lineHeight: 1.2 }}>SmileCare Dental</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', display: 'block', flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#6B7280' }}>{AGENT_NAME} · Receptionist · Available now</span>
               </div>
             </div>
-          )}
 
-          <div ref={bottomRef} />
-        </div>
-
-        {/* ── Input bar ── */}
-        <div
-          className="shrink-0 px-3 py-3 flex items-end gap-2"
-          style={{ background: '#1f2c34' }}
-        >
-          <div
-            className="flex-1 flex items-end rounded-2xl overflow-hidden"
-            style={{ background: '#2a3942' }}
-          >
-            <textarea
-              ref={inputRef}
-              rows={1}
-              value={input}
-              onChange={e => {
-                setInput(e.target.value)
-                // Auto-grow up to 4 rows
-                e.target.style.height = 'auto'
-                e.target.style.height = Math.min(e.target.scrollHeight, 96) + 'px'
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder={wasEscalated ? 'A team member will follow up…' : 'Message SmileCare…'}
-              disabled={wasEscalated}
-              className="flex-1 px-4 py-3 text-sm resize-none outline-none bg-transparent leading-relaxed"
-              style={{
-                color: '#e9edef',
-                minHeight: 44,
-                maxHeight: 96,
-                '::placeholder': { color: '#8696a0' },
-              }}
-            />
+            {/* Phone CTA */}
+            <a
+              href="tel:+27112345678"
+              className="cw-phone"
+              title="Call SmileCare — 011 234 5678"
+              style={{ color: '#9CA3AF', transition: 'color 0.15s', padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, textDecoration: 'none' }}
+            >
+              <PhoneIcon />
+            </a>
           </div>
 
-          {/* Send button */}
-          <button
-            onClick={sendMessage}
-            disabled={!input.trim() || isTyping || wasEscalated}
-            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all duration-150"
-            style={{
-              background: input.trim() && !isTyping && !wasEscalated
-                ? '#00a884'
-                : '#2a3942',
-              transform: input.trim() ? 'scale(1)' : 'scale(0.9)',
-            }}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={input.trim() && !wasEscalated ? 'white' : '#8696a0'}
-              strokeWidth={2}
-              className="w-5 h-5"
-              style={{ transform: 'rotate(45deg)' }}
-            >
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-          </button>
-        </div>
+          {/* ── Intro banner ── */}
+          <div style={{ padding: '20px 20px 0', flexShrink: 0 }}>
+            <div style={{ background: '#F0F9FB', border: '1px solid #CCE9F0', borderRadius: 14, padding: '16px 18px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>SC</span>
+              </div>
+              <div>
+                <p style={{ fontWeight: 600, fontSize: 13, color: '#0F4C57', marginBottom: 3 }}>SmileCare Dental — Sandton &amp; Rosebank</p>
+                <p style={{ fontSize: 12, color: '#2A7A8C', lineHeight: 1.5 }}>Mon – Fri: 07:00 – 18:00 &nbsp;·&nbsp; Sat: 08:00 – 14:00 &nbsp;·&nbsp; Emergency: 011 234 5678</p>
+              </div>
+            </div>
+          </div>
 
-        {/* Safe area spacer for iPhone home bar */}
-        <div style={{ height: 'env(safe-area-inset-bottom, 0px)', background: '#1f2c34' }} />
+          {/* ── Messages ── */}
+          <div
+            className="cw-messages"
+            style={{ flex: 1, overflowY: 'auto', padding: '20px 0 8px', display: 'flex', flexDirection: 'column' }}
+          >
+            {/* Date pill */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <span style={{ fontSize: 11, color: '#9CA3AF', background: '#F3F4F6', padding: '4px 12px', borderRadius: 20, fontWeight: 500 }}>
+                Today
+              </span>
+            </div>
+
+            {/* Agent label — shown once before the first agent message */}
+            {messages.length > 0 && (
+              <p style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', paddingLeft: 22, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {AGENT_NAME}
+              </p>
+            )}
+
+            {messages.map(m => <Bubble key={m.id} msg={m} />)}
+
+            {isTyping && <TypingDots />}
+
+            {wasEscalated && !isTyping && <EscalationNotice />}
+
+            {error && (
+              <div style={{ margin: '4px 20px', padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, fontSize: 13, color: '#991B1B' }}>
+                {error}
+              </div>
+            )}
+
+            <div ref={bottomRef} />
+          </div>
+
+          {/* ── Input bar ── */}
+          <div style={{ borderTop: '1px solid #F0F0F0', padding: '12px 16px', flexShrink: 0, background: '#fff' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, background: '#F9FAFB', borderRadius: 14, border: '1.5px solid #E5E7EB', padding: '10px 14px', transition: 'border-color 0.15s' }}>
+              <textarea
+                ref={el => { inputRef.current = el; taRef.current = el }}
+                className="cw-textarea"
+                rows={1}
+                value={input}
+                onChange={e => { setInput(e.target.value); autoGrow(e.target) }}
+                onKeyDown={handleKeyDown}
+                disabled={wasEscalated}
+                placeholder={wasEscalated ? 'Team will follow up with you…' : 'Type your message…'}
+              />
+              <button
+                className="cw-send"
+                onClick={sendMessage}
+                disabled={!canSend}
+                style={{
+                  width: 36, height: 36, borderRadius: '50%', border: 'none',
+                  background: canSend ? TEAL : '#D1D5DB',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: canSend ? 'pointer' : 'default',
+                  flexShrink: 0, transition: 'background 0.15s',
+                }}
+              >
+                <SendIcon />
+              </button>
+            </div>
+
+            {/* Footer note */}
+            <p style={{ textAlign: 'center', fontSize: 11, color: '#D1D5DB', marginTop: 10 }}>
+              SmileCare Dental &nbsp;·&nbsp; hello@smilecare.co.za
+            </p>
+          </div>
+
+          {/* iPhone safe area */}
+          <div style={{ height: 'env(safe-area-inset-bottom, 0px)', background: '#fff', flexShrink: 0 }} />
+        </div>
       </div>
     </>
   )
