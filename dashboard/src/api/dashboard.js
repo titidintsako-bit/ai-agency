@@ -17,3 +17,6 @@ export const updateEscalation = (id, data) =>
 
 export const getConversationMessages = (id) =>
   client.get(`/dashboard/conversations/${id}/messages`)
+
+export const getAppointments = (params = {}) =>
+  client.get('/dashboard/appointments', { params })

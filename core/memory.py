@@ -18,6 +18,7 @@ Functions:
     create_escalation()        — flag a conversation for human review
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -276,8 +277,89 @@ def create_escalation(
         logger.warning(
             f"ESCALATION created: {escalation_id} | conversation: {conversation_id} | reason: {reason}"
         )
+
+        # Fire-and-forget email alert (non-blocking)
+        _send_escalation_email_async(
+            conversation_id=conversation_id,
+            client_id=client_id,
+            reason=reason,
+            summary=summary,
+            escalation_id=escalation_id,
+        )
+
         return escalation_id
 
     except Exception as e:
         logger.error(f"Failed to create escalation for conversation {conversation_id}: {e}")
         raise RuntimeError(f"Could not create escalation: {e}") from e
+
+
+def _send_escalation_email_async(
+    conversation_id: str,
+    client_id: str,
+    reason: str,
+    summary: str,
+    escalation_id: str,
+) -> None:
+    """
+    Attempt to send an escalation alert email without blocking the caller.
+
+    Loads the conversation's client name, user_identifier, and recent transcript,
+    then fires the email as a background coroutine. Silently ignored if the event
+    loop is not running (e.g. during tests).
+    """
+    async def _send() -> None:
+        try:
+            from integrations.email import send_escalation_alert
+
+            db = get_db()
+
+            # Fetch client name
+            client_r = db.table("clients").select("name").eq("id", client_id).limit(1).execute()
+            client_name = (client_r.data[0]["name"] if client_r.data else "Unknown Client")
+
+            # Fetch conversation user_identifier
+            conv_r = (
+                db.table("conversations")
+                .select("user_identifier")
+                .eq("id", conversation_id)
+                .limit(1)
+                .execute()
+            )
+            user_identifier = (conv_r.data[0]["user_identifier"] if conv_r.data else None)
+
+            # Fetch last 20 messages for transcript
+            msgs_r = (
+                db.table("messages")
+                .select("role, content")
+                .eq("conversation_id", conversation_id)
+                .order("created_at", desc=False)
+                .limit(20)
+                .execute()
+            )
+            transcript = [
+                {"role": m["role"], "content": m["content"]}
+                for m in msgs_r.data
+                if m["role"] in ("user", "assistant")
+            ]
+
+            await send_escalation_alert(
+                client_name=client_name,
+                reason=reason,
+                summary=summary,
+                conversation_id=conversation_id,
+                escalation_id=escalation_id,
+                user_identifier=user_identifier,
+                transcript=transcript,
+            )
+        except Exception as exc:
+            logger.error(f"Background email send failed: {exc}")
+
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(_send())
+        else:
+            loop.run_until_complete(_send())
+    except RuntimeError:
+        pass  # No event loop available (e.g. CLI / test context)

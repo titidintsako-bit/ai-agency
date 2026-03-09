@@ -215,6 +215,53 @@ async def get_resolution(_: str = Depends(get_current_user)) -> dict:
 # GET /analytics/questions
 # ---------------------------------------------------------------------------
 
+@router.get("/funnel")
+async def get_funnel(_: str = Depends(get_current_user)) -> dict:
+    """
+    Conversation funnel for the last 30 days.
+
+    Returns stage counts showing how conversations progress through the platform:
+        Started → Engaged → Booked → Escalated / Completed
+
+    Frontend renders this as a horizontal bar funnel chart.
+    """
+    db    = get_db()
+    since = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+
+    try:
+        # Stage 1 — All conversations started
+        all_conv  = db.table("conversations").select("id, status").gte("started_at", since).execute()
+        total     = len(all_conv.data)
+
+        # Stage 2 — Conversations that were not immediately abandoned (had some engagement)
+        engaged   = sum(1 for r in all_conv.data if r["status"] != "abandoned")
+
+        # Stage 3 — Appointment requests logged
+        appt_r    = db.table("appointments").select("id").gte("created_at", since).execute()
+        booked    = len(appt_r.data)
+
+        # Stage 4 — Completed without escalation
+        completed = sum(1 for r in all_conv.data if r["status"] == "completed")
+
+        # Stage 5 — Escalated to human
+        escalated = sum(1 for r in all_conv.data if r["status"] == "escalated")
+
+    except Exception as e:
+        logger.error(f"Funnel query failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to load funnel data.")
+
+    return {
+        "period": "last 30 days",
+        "funnel": [
+            {"stage": "Conversations Started", "count": total,     "color": "#6366f1"},
+            {"stage": "Engaged",               "count": engaged,   "color": "#58a6ff"},
+            {"stage": "Appointments Booked",   "count": booked,    "color": "#3fb950"},
+            {"stage": "Completed",             "count": completed, "color": "#8b949e"},
+            {"stage": "Escalated",             "count": escalated, "color": "#f85149"},
+        ],
+    }
+
+
 @router.get("/questions")
 async def get_top_questions(_: str = Depends(get_current_user)) -> dict:
     """

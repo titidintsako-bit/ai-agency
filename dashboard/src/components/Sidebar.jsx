@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import client from '../api/client'
 import { useAuth } from '../context/AuthContext'
@@ -34,6 +34,17 @@ const NAV = [
     ),
   },
   {
+    to: '/appointments',
+    label: 'Appointments',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    ),
+  },
+  {
     to: '/analytics',
     label: 'Analytics',
     icon: (
@@ -62,6 +73,7 @@ export default function Sidebar({ open, onClose }) {
 
   const [health,  setHealth]  = useState(null)
   const [pending, setPending] = useState(0)
+  const esRef = useRef(null)
 
   useEffect(() => {
     client.get('/health')
@@ -69,12 +81,34 @@ export default function Sidebar({ open, onClose }) {
       .catch(() => setHealth('error'))
   }, [])
 
+  // SSE: live escalation badge count
   useEffect(() => {
     if (!user) return
-    client.get('/dashboard/escalations', { params: { status: 'pending' } })
-      .then(data => setPending((data.escalations || []).length))
-      .catch(() => {})
-  }, [location.pathname, user])
+
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    const apiBase = import.meta.env.VITE_API_URL || ''
+    const url = `${apiBase}/api/events/stream?token=${encodeURIComponent(token)}`
+    const es = new EventSource(url)
+    esRef.current = es
+
+    es.addEventListener('escalations', (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        setPending(data.pending ?? 0)
+      } catch {}
+    })
+
+    es.onerror = () => {
+      // Fallback: poll once on error
+      client.get('/dashboard/escalations', { params: { status: 'pending' } })
+        .then(data => setPending((data.escalations || []).length))
+        .catch(() => {})
+    }
+
+    return () => { es.close(); esRef.current = null }
+  }, [user])
 
   // Close sidebar on nav (mobile)
   function handleNavClick() {

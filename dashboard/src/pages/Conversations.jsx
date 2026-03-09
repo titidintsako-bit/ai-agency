@@ -28,15 +28,18 @@ export default function Conversations() {
 
   const [pendingStatus,     setPendingStatus]     = useState('')
   const [pendingClientSlug, setPendingClientSlug] = useState('')
+  const [pendingSearch,     setPendingSearch]     = useState('')
   const [appliedStatus,     setAppliedStatus]     = useState('')
   const [appliedClientSlug, setAppliedClientSlug] = useState('')
+  const [appliedSearch,     setAppliedSearch]     = useState('')
 
-  const fetchPage = useCallback(async (off, status, slug) => {
+  const fetchPage = useCallback(async (off, status, slug, search) => {
     setLoading(true)
     try {
       const params = { limit: PAGE_SIZE, offset: off }
       if (status) params.status      = status
       if (slug)   params.client_slug = slug
+      if (search) params.search      = search
       const data  = await getConversations(params)
       const items = data.conversations || []
       setRows(off === 0 ? items : prev => [...prev, ...items])
@@ -51,19 +54,20 @@ export default function Conversations() {
 
   useEffect(() => {
     setOffset(0)
-    fetchPage(0, appliedStatus, appliedClientSlug)
+    fetchPage(0, appliedStatus, appliedClientSlug, appliedSearch)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appliedStatus, appliedClientSlug])
+  }, [appliedStatus, appliedClientSlug, appliedSearch])
 
   function applyFilters() {
     setAppliedStatus(pendingStatus)
     setAppliedClientSlug(pendingClientSlug)
+    setAppliedSearch(pendingSearch)
   }
 
   function loadMore() {
     const next = offset + PAGE_SIZE
     setOffset(next)
-    fetchPage(next, appliedStatus, appliedClientSlug)
+    fetchPage(next, appliedStatus, appliedClientSlug, appliedSearch)
   }
 
   return (
@@ -85,6 +89,13 @@ export default function Conversations() {
           </select>
           <input type="text" placeholder="Client slug…" value={pendingClientSlug}
             onChange={e => setPendingClientSlug(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && applyFilters()}
+            className="px-3 py-1.5 rounded-lg text-sm outline-none w-36"
+            style={{ background: '#161b22', border: '1px solid #30363d', color: '#e6edf3' }}
+            onFocus={e => { e.currentTarget.style.borderColor = '#6366f1' }}
+            onBlur={e  => { e.currentTarget.style.borderColor = '#30363d' }} />
+          <input type="text" placeholder="Search user…" value={pendingSearch}
+            onChange={e => setPendingSearch(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && applyFilters()}
             className="px-3 py-1.5 rounded-lg text-sm outline-none w-36"
             style={{ background: '#161b22', border: '1px solid #30363d', color: '#e6edf3' }}

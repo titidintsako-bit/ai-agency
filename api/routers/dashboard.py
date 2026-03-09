@@ -132,17 +132,18 @@ async def get_agents(_: str = Depends(get_current_user)) -> dict:
 
 @router.get("/conversations")
 async def get_conversations(
-    limit:  int = Query(default=50, le=200),
-    offset: int = Query(default=0,  ge=0),
-    status: str = Query(default=""),
+    limit:       int = Query(default=50, le=200),
+    offset:      int = Query(default=0,  ge=0),
+    status:      str = Query(default=""),
     client_slug: str = Query(default=""),
+    search:      str = Query(default=""),
     _: str = Depends(get_current_user),
 ) -> dict:
     """
     Return a paginated list of conversations for the dashboard table.
 
     Each row includes client name, agent name, channel, status, and timestamps.
-    Optional filters: status, client_slug.
+    Optional filters: status, client_slug, search (matches user_identifier).
     """
     db = get_db()
 
@@ -158,6 +159,9 @@ async def get_conversations(
         if status:
             q = q.eq("status", status)
 
+        if search:
+            q = q.ilike("user_identifier", f"%{search}%")
+
         result = q.execute()
 
         # If filtering by client_slug, filter in Python (PostgREST embedded filter is verbose)
@@ -170,6 +174,55 @@ async def get_conversations(
     except Exception as e:
         logger.error(f"Conversations query failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to load conversations.")
+
+
+# ---------------------------------------------------------------------------
+# GET /dashboard/appointments
+# ---------------------------------------------------------------------------
+
+@router.get("/appointments")
+async def get_appointments(
+    limit:       int = Query(default=50, le=200),
+    offset:      int = Query(default=0,  ge=0),
+    status:      str = Query(default=""),
+    client_slug: str = Query(default=""),
+    _: str = Depends(get_current_user),
+) -> dict:
+    """
+    Return appointment requests for the Appointments dashboard page.
+
+    Includes client name and conversation ID for cross-referencing.
+    Optional filters: status (pending/confirmed/cancelled/completed), client_slug.
+    """
+    db = get_db()
+
+    try:
+        q = (
+            db.table("appointments")
+            .select(
+                "id, patient_name, contact_number, preferred_date, preferred_time, "
+                "service_type, is_existing_patient, notes, status, created_at, "
+                "conversation_id, clients(name, slug)"
+            )
+            .order("created_at", desc=True)
+            .limit(limit)
+            .offset(offset)
+        )
+
+        if status:
+            q = q.eq("status", status)
+
+        result = q.execute()
+
+        data = result.data
+        if client_slug:
+            data = [r for r in data if r.get("clients", {}).get("slug") == client_slug]
+
+        return {"appointments": data, "count": len(data)}
+
+    except Exception as e:
+        logger.error(f"Appointments query failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to load appointments.")
 
 
 # ---------------------------------------------------------------------------

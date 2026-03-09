@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getConfig, listClients, updateConfig } from '../api/config'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -222,6 +222,101 @@ function TriggersEditor({ triggers = [], onChange }) {
   )
 }
 
+// ── Embed tab ─────────────────────────────────────────────────────────────────
+
+function CopyField({ label, value }) {
+  const [copied, setCopied] = useState(false)
+  const ref = useRef(null)
+
+  function copy() {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium uppercase tracking-wider" style={{ color: '#6e7681' }}>{label}</p>
+      <div
+        className="flex items-start gap-2 rounded-lg p-3"
+        style={{ background: '#0d1117', border: '1px solid #21262d' }}
+      >
+        <pre
+          ref={ref}
+          className="flex-1 text-xs overflow-x-auto whitespace-pre-wrap break-all"
+          style={{ color: '#58a6ff', fontFamily: 'monospace', margin: 0 }}
+        >{value}</pre>
+        <button
+          onClick={copy}
+          title="Copy"
+          className="shrink-0 p-1.5 rounded-md transition-colors duration-150"
+          style={{ color: copied ? '#3fb950' : '#6e7681', background: 'rgba(255,255,255,0.04)' }}
+        >
+          {copied ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          )}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function EmbedTab({ slug }) {
+  const base   = window.location.origin
+  const chatUrl = `${base}/chat/${slug}`
+  const iframe  = `<iframe\n  src="${chatUrl}"\n  width="420"\n  height="600"\n  style="border:none;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.2);"\n  allow="clipboard-write"\n></iframe>`
+  const script  = `<!-- AI Agency Chat Widget -->\n<script>\n  (function(){\n    var iframe = document.createElement('iframe');\n    iframe.src = '${chatUrl}';\n    iframe.style.cssText = 'position:fixed;bottom:24px;right:24px;width:420px;height:600px;border:none;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,0.3);z-index:9999;';\n    document.body.appendChild(iframe);\n  })();\n</script>`
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <SectionHeader
+        title="Embed Widget"
+        subtitle="Add the AI chat agent to any website. Copy one of the snippets below."
+      />
+
+      {/* Direct link */}
+      <CopyField label="Direct chat URL" value={chatUrl} />
+
+      {/* Inline iframe */}
+      <CopyField label="Inline iframe (paste into page HTML)" value={iframe} />
+
+      {/* Floating widget script */}
+      <CopyField label="Floating widget (fixed bottom-right)" value={script} />
+
+      {/* Preview link */}
+      <div
+        className="flex items-center gap-3 rounded-lg px-4 py-3"
+        style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)' }}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth={1.8} className="w-4 h-4 shrink-0">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        <p className="text-sm" style={{ color: '#8b949e' }}>
+          Open widget in a new tab:{' '}
+          <a
+            href={chatUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+            style={{ color: '#818cf8' }}
+          >
+            {chatUrl}
+          </a>
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ── AgentConfig page ──────────────────────────────────────────────────────────
 
 export default function AgentConfig() {
@@ -349,6 +444,7 @@ export default function AgentConfig() {
           { key: 'hours',    label: 'Business Hours' },
           { key: 'services', label: 'Services'       },
           { key: 'triggers', label: 'Escalation Triggers' },
+          { key: 'embed',    label: 'Embed Widget'   },
         ].map(({ key, label }) => (
           <button
             key={key}
@@ -416,6 +512,10 @@ export default function AgentConfig() {
                   onChange={val => patch('escalation_triggers', val)}
                 />
               </div>
+            )}
+
+            {tab === 'embed' && activeSlug && (
+              <EmbedTab slug={activeSlug} />
             )}
           </>
         )}

@@ -3,7 +3,7 @@ import {
   Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart,
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { getCosts, getQuestions, getResolution, getUsage } from '../api/analytics'
+import { getCosts, getFunnel, getQuestions, getResolution, getUsage } from '../api/analytics'
 import StatCard from '../components/StatCard'
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
@@ -88,22 +88,25 @@ export default function Analytics() {
   const [costs,      setCosts]      = useState(null)
   const [resolution, setResolution] = useState(null)
   const [questions,  setQuestions]  = useState(null)
+  const [funnel,     setFunnel]     = useState(null)
   const [loading,    setLoading]    = useState(true)
   const [error,      setError]      = useState(null)
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [u, c, r, q] = await Promise.all([
+      const [u, c, r, q, f] = await Promise.all([
         getUsage(period),
         getCosts(period),
         getResolution(),
         getQuestions(),
+        getFunnel(),
       ])
       setUsage(u)
       setCosts(c)
       setResolution(r)
       setQuestions(q)
+      setFunnel(f)
       setError(null)
     } catch (err) {
       setError(err.message)
@@ -251,6 +254,48 @@ export default function Analytics() {
               ))}
             </LineChart>
           </ResponsiveContainer>
+        )}
+      </Panel>
+
+      {/* Conversation funnel */}
+      <Panel
+        title="Conversation Funnel"
+        action={<span className="text-xs" style={{ color: '#8b949e' }}>last 30 days</span>}
+      >
+        {loading ? (
+          <div className="space-y-3">
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="h-8 rounded animate-pulse" style={{ background: '#21262d' }} />
+            ))}
+          </div>
+        ) : !funnel?.funnel?.length ? (
+          <p className="text-sm py-6 text-center" style={{ color: '#6e7681' }}>No funnel data yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {funnel.funnel.map((stage, i) => {
+              const max = funnel.funnel[0]?.count || 1
+              const pct = max > 0 ? Math.round((stage.count / max) * 100) : 0
+              return (
+                <div key={stage.stage}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm" style={{ color: '#c9d1d9' }}>{stage.stage}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs tabular-nums" style={{ color: '#6e7681' }}>{pct}%</span>
+                      <span className="text-sm font-semibold tabular-nums w-10 text-right" style={{ color: '#e6edf3' }}>
+                        {stage.count.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ background: '#21262d' }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${pct}%`, background: stage.color }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         )}
       </Panel>
 

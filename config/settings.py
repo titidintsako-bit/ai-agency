@@ -76,6 +76,15 @@ class Settings(BaseSettings):
     dashboard_origin: str = ""         # e.g. https://ai-agency-dashboard.vercel.app
 
     # ------------------------------------------------------------------
+    # Email notifications — Resend API (optional)
+    # Escalation alerts are emailed when resend_api_key is set.
+    # Leave blank to disable email notifications.
+    # ------------------------------------------------------------------
+    resend_api_key:   str = ""
+    alert_email_to:   str = ""                     # Who receives escalation alerts
+    alert_email_from: str = "alerts@aiagency.co.za"
+
+    # ------------------------------------------------------------------
     # Application
     # ------------------------------------------------------------------
     environment: str = "development"   # development | production

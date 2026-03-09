@@ -1,0 +1,145 @@
+# ============================================================
+# config/clients/lexispro.yaml
+#
+# LexisPro Attorneys — Cape Town, Western Cape
+# Agent: Aisha (virtual legal receptionist)
+# ============================================================
+
+client:
+  slug: lexispro
+  name: LexisPro Attorneys
+  industry: legal
+  tier: professional
+  contact_email: hello@lexispro.co.za
+  monthly_retainer_zar: 6500.00
+
+# ------------------------------------------------------------
+# Agent name — used in the system prompt
+# ------------------------------------------------------------
+agent_name: Aisha
+
+# ------------------------------------------------------------
+# Agent channels
+# ------------------------------------------------------------
+agents:
+  web_chat:
+    name: LexisPro Web Chat
+    channel: web
+    model: claude-haiku-4-5-20251001
+
+# ------------------------------------------------------------
+# Firm information
+# ------------------------------------------------------------
+firm_info:
+  address: "Suite 801, The Halyard, 12 Christiaan Barnard Street, Cape Town Foreshore, 8001"
+  phone: "021 555 1234"
+  email: "hello@lexispro.co.za"
+  website: "https://lexispro.co.za"
+
+  hours:
+    monday:    "08:00 - 17:00"
+    tuesday:   "08:00 - 17:00"
+    wednesday: "08:00 - 17:00"
+    thursday:  "08:00 - 17:00"
+    friday:    "08:00 - 16:00"
+    saturday:  "Closed"
+    sunday:    "Closed"
+    public_holidays: "Closed"
+
+  emergency_contact: "021 555 1234"
+
+# ------------------------------------------------------------
+# Team
+# ------------------------------------------------------------
+attorneys:
+  - name: "Adv. Nadia van der Merwe"
+    role: "Founding Partner — Family & Divorce Law"
+  - name: "Adv. Themba Nkosi"
+    role: "Senior Associate — Commercial & Contract Law"
+  - name: "Adv. Priya Reddy"
+    role: "Associate — Property & Conveyancing"
+  - name: "Adv. Christiaan Botha"
+    role: "Associate — Labour & Employment Law"
+
+# ------------------------------------------------------------
+# Services and fees
+# ------------------------------------------------------------
+services:
+  - name: Initial Consultation
+    price_zar: 1200
+    price_display: "R1,200"
+    duration_minutes: 60
+    description: "Comprehensive 60-minute consultation with a qualified attorney."
+
+  - name: Contract Drafting & Review
+    price_zar: 3500
+    price_display: "from R3,500"
+    duration_minutes: 0
+    description: "Commercial contracts, NDAs, service agreements, and supplier contracts."
+
+  - name: Property & Conveyancing
+    price_zar: 5000
+    price_display: "from R5,000"
+    duration_minutes: 0
+    description: "Transfer of ownership, bond registration, lease agreements."
+
+  - name: Family Law & Divorce
+    price_zar: 2500
+    price_display: "from R2,500"
+    duration_minutes: 0
+    description: "Divorce, custody, maintenance, and ante-nuptial contracts."
+
+  - name: Labour & Employment Law
+    price_zar: 2000
+    price_display: "from R2,000"
+    duration_minutes: 0
+    description: "CCMA representation, unfair dismissal, employment contracts."
+
+  - name: Estate Planning & Wills
+    price_zar: 1800
+    price_display: "from R1,800"
+    duration_minutes: 0
+    description: "Drafting of wills, trusts, and estate administration."
+
+  - name: Litigation Support
+    price_zar: 4500
+    price_display: "from R4,500"
+    duration_minutes: 0
+    description: "High Court and Magistrates' Court representation."
+
+# ------------------------------------------------------------
+# Consultation booking
+# ------------------------------------------------------------
+consultation_booking:
+  required_fields:
+    - client_name
+    - contact_number
+    - preferred_date
+    - preferred_time
+    - legal_matter
+
+  optional_fields:
+    - is_existing_client
+    - additional_notes
+
+  confirmation_message: >
+    Thank you! Your consultation request has been logged. One of our legal
+    secretaries will call you within 2 hours during office hours to confirm
+    your appointment and provide payment instructions.
+    If urgent, call us directly on 021 555 1234.
+
+# ------------------------------------------------------------
+# Escalation triggers
+# ------------------------------------------------------------
+escalation:
+  triggers:
+    - urgent court deadline
+    - restraining order
+    - explicit request to speak to attorney
+    - threat of legal action against the firm
+    - abuse or harassment
+
+  auto_response: >
+    I understand this is an urgent matter. I have flagged your message for
+    immediate attention by one of our attorneys. They will contact you as
+    soon as possible. If this is an emergency, please call 021 555 1234 directly.

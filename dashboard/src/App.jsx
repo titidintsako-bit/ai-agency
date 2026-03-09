@@ -1,19 +1,22 @@
 import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { ToastProvider } from './context/ToastContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
 
-import Login            from './pages/Login'
-import Home             from './pages/Home'
-import Conversations    from './pages/Conversations'
+import Login              from './pages/Login'
+import Home               from './pages/Home'
+import Conversations      from './pages/Conversations'
 import ConversationDetail from './pages/ConversationDetail'
-import Escalations      from './pages/Escalations'
-import Analytics        from './pages/Analytics'
-import AgentConfig      from './pages/AgentConfig'
-import ChatWidget       from './pages/ChatWidget'
-import Monitor          from './pages/Monitor'
-import SmilecareSite    from './pages/SmilecareSite'
+import Escalations        from './pages/Escalations'
+import Analytics          from './pages/Analytics'
+import AgentConfig        from './pages/AgentConfig'
+import ChatWidget         from './pages/ChatWidget'
+import Monitor            from './pages/Monitor'
+import SmilecareSite      from './pages/SmilecareSite'
+import LexisProSite       from './pages/LexisProSite'
+import Appointments       from './pages/Appointments'
 
 function Shell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -73,6 +76,7 @@ function Shell({ children }) {
 export default function App() {
   return (
     <AuthProvider>
+      <ToastProvider>
       <BrowserRouter>
         <Routes>
           {/* Public — no auth, no sidebar */}
@@ -80,6 +84,7 @@ export default function App() {
           <Route path="/chat/:slug"     element={<ChatWidget />} />
           <Route path="/monitor"        element={<Monitor />} />
           <Route path="/smilecare"      element={<SmilecareSite />} />
+          <Route path="/lexispro"       element={<LexisProSite />} />
 
           {/* Protected — all inside the sidebar shell */}
           <Route path="/" element={
@@ -112,11 +117,17 @@ export default function App() {
               <Shell><AgentConfig /></Shell>
             </ProtectedRoute>
           } />
+          <Route path="/appointments" element={
+            <ProtectedRoute>
+              <Shell><Appointments /></Shell>
+            </ProtectedRoute>
+          } />
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   )
 }

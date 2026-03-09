@@ -25,6 +25,7 @@ Usage:
 
 import logging
 
+from agents.lexispro.agent import LexisProAgent
 from agents.smilecare.agent import SmileCareAgent
 from core.agent_base import BaseAgent
 from core.database import get_db
@@ -39,6 +40,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 AGENT_CLASSES: dict[str, type[BaseAgent]] = {
     "smilecare": SmileCareAgent,
+    "lexispro":  LexisProAgent,
 }
 
 
