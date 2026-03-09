@@ -1,31 +1,31 @@
 # ============================================================
 # config/clients/smilecare.yaml
 #
-# Client configuration for SmileCare Dental.
-# This file is the single source of truth for everything the
-# agent needs to know about this client at runtime.
-#
-# To create a new client: copy this file, rename it, and update
-# every section. The agent loads this file by matching the slug.
+# SmileCare Dental — Sandton, Johannesburg
+# Agent: Lerato (virtual receptionist)
 # ============================================================
 
 client:
-  slug: smilecare                          # Must match the folder name and the DB clients.slug
+  slug: smilecare
   name: SmileCare Dental
   industry: dental
   tier: professional
-  contact_email: admin@smilecare.co.za
+  contact_email: hello@smilecare.co.za
   monthly_retainer_zar: 5500.00
 
 # ------------------------------------------------------------
-# Agent instances for this client
-# Each entry here corresponds to a row in the agents table.
+# Agent name — used in the system prompt
+# ------------------------------------------------------------
+agent_name: Lerato
+
+# ------------------------------------------------------------
+# Agent channels
 # ------------------------------------------------------------
 agents:
   web_chat:
     name: SmileCare Web Chat
     channel: web
-    model: claude-haiku-4-5-20251001       # Haiku for cost efficiency on high-volume chat
+    model: claude-haiku-4-5-20251001
 
   whatsapp:
     name: SmileCare WhatsApp
@@ -34,108 +34,132 @@ agents:
 
 # ------------------------------------------------------------
 # Clinic information
-# The agent uses these facts when answering FAQs.
 # ------------------------------------------------------------
 clinic_info:
-  address: "12 Smile Street, Sandton, Johannesburg, 2196"
-  google_maps_url: "https://maps.google.com/?q=12+Smile+Street+Sandton"
-  phone: "+27 11 234 5678"
+  address: "Shop 14, Sandton City Medical Suites, Sandton, 2196"
+  branch_rosebank: "Rosebank (satellite branch)"
+  phone: "011 234 5678"
   whatsapp: "+27 82 555 0123"
   email: "hello@smilecare.co.za"
   website: "https://smilecare.co.za"
 
   hours:
-    monday:    "08:00 - 17:00"
-    tuesday:   "08:00 - 17:00"
-    wednesday: "08:00 - 17:00"
-    thursday:  "08:00 - 17:00"
-    friday:    "08:00 - 16:00"
-    saturday:  "09:00 - 13:00"
+    monday:    "07:00 - 18:00"
+    tuesday:   "07:00 - 18:00"
+    wednesday: "07:00 - 18:00"
+    thursday:  "07:00 - 18:00"
+    friday:    "07:00 - 18:00"
+    saturday:  "08:00 - 14:00"
     sunday:    "Closed"
     public_holidays: "Closed"
 
-  emergency_contact: "+27 82 555 0123"
+  emergency_contact: "011 234 5678"
   after_hours_message: >
     We are currently closed. Your message has been logged and a member of our
     team will contact you during business hours. For dental emergencies,
-    please call +27 82 555 0123.
+    please call 011 234 5678.
+
+# ------------------------------------------------------------
+# Team
+# ------------------------------------------------------------
+dentists:
+  - name: "Dr Sipho Dlamini"
+    role: "Principal Dentist"
+  - name: "Dr Amina Patel"
+    role: "General & Cosmetic Dentist"
+  - name: "Dr Gareth Williams"
+    role: "Orthodontist"
+  - name: "Dr Naledi Mokoena"
+    role: "General Dentist"
+
+# ------------------------------------------------------------
+# Medical aids accepted
+# ------------------------------------------------------------
+medical_aids:
+  - Discovery Health
+  - Momentum
+  - Bonitas
+  - Medihelp
+  - Bestmed
 
 # ------------------------------------------------------------
 # Services and pricing
-# Shown to patients when they ask about treatments or costs.
 # ------------------------------------------------------------
 services:
-  - name: General Checkup & Clean
-    price_zar: 850
+  - name: Consultation
+    price_zar: 350
+    price_display: "R350"
+    duration_minutes: 30
+    description: "Initial visit and oral assessment."
+
+  - name: Scale & Polish (Cleaning)
+    price_zar: 550
+    price_display: "R450 – R650"
     duration_minutes: 45
-    description: "Full oral examination, scale and polish."
+    description: "Professional scale and polish. Price depends on complexity."
 
   - name: Teeth Whitening
-    price_zar: 2500
+    price_zar: 2800
+    price_display: "from R2,800"
     duration_minutes: 60
     description: "In-chair professional whitening treatment."
 
-  - name: Tooth Extraction
-    price_zar: 1200
-    duration_minutes: 30
-    description: "Simple extraction under local anaesthetic."
+  - name: Braces / Orthodontics
+    price_zar: 18000
+    price_display: "from R18,000"
+    duration_minutes: 45
+    description: "Full orthodontic treatment — traditional braces or clear aligners."
 
-  - name: Root Canal Treatment
-    price_zar: 4500
-    duration_minutes: 90
-    description: "Full root canal — price is per canal."
+  - name: Dental Implants
+    price_zar: 22000
+    price_display: "from R22,000"
+    duration_minutes: 60
+    description: "Permanent tooth replacement. Price is per implant."
 
-  - name: Dental Implant Consultation
-    price_zar: 500
+  - name: Kids Dentistry
+    price_zar: 280
+    price_display: "from R280"
     duration_minutes: 30
-    description: "Initial consultation to assess implant suitability."
-
-  - name: Braces / Orthodontic Consultation
-    price_zar: 500
-    duration_minutes: 30
-    description: "Assessment for traditional or clear aligner braces."
+    description: "Child-friendly dental care for patients under 12."
 
   - name: Emergency Appointment
     price_zar: 1500
+    price_display: "R1,500"
     duration_minutes: 45
     description: "Same-day emergency slot for pain, trauma, or urgent issues."
 
 # ------------------------------------------------------------
 # Appointment booking
-# Defines what the agent must collect before confirming a slot.
 # ------------------------------------------------------------
 appointment_booking:
   required_fields:
     - patient_name
     - contact_number
-    - preferred_date         # Agent collects as free text, staff confirm exact slot
+    - preferred_date
     - preferred_time
     - service_type
 
   optional_fields:
-    - is_existing_patient    # boolean — affects how staff prepare
+    - is_existing_patient
     - additional_notes
 
   confirmation_message: >
     Thank you! Your appointment request has been logged. A member of our team
     will call you within 2 hours during business hours to confirm your slot.
-    If you need to reach us directly, call +27 11 234 5678.
+    If you need to reach us directly, call 011 234 5678.
 
 # ------------------------------------------------------------
 # Escalation triggers
-# If any of these patterns are detected, the conversation is
-# flagged as 'escalated' in the database and appears in the
-# dashboard alert panel for human review.
 # ------------------------------------------------------------
 escalation:
   triggers:
-    - complaint              # Patient expresses dissatisfaction
-    - emergency              # Dental emergency described
-    - explicit_request       # Patient explicitly asks to speak to a person
-    - billing_dispute        # Dispute about an invoice or payment
-    - abuse                  # Abusive or threatening language
+    - complaint
+    - emergency
+    - explicit_request
+    - billing_dispute
+    - abuse
 
   auto_response: >
     I understand this requires immediate attention. I have flagged your message
     for one of our team members who will contact you as soon as possible.
-    For urgent matters, please call +27 11 234 5678 directly.
+    For urgent matters, please call 011 234 5678 directly.

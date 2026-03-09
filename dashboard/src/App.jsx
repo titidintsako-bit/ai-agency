@@ -12,6 +12,7 @@ import Analytics        from './pages/Analytics'
 import AgentConfig      from './pages/AgentConfig'
 import ChatWidget       from './pages/ChatWidget'
 import Monitor          from './pages/Monitor'
+import SmilecareSite    from './pages/SmilecareSite'
 
 function Shell({ children }) {
   return (
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/login"          element={<Login />} />
           <Route path="/chat/:slug"     element={<ChatWidget />} />
           <Route path="/monitor"        element={<Monitor />} />
+          <Route path="/smilecare"      element={<SmilecareSite />} />
 
           {/* Protected — all inside the sidebar shell */}
           <Route path="/" element={
