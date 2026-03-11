@@ -132,7 +132,7 @@ export default function PortalLogin() {
         </div>
 
         <p className="text-center text-xs mt-6" style={{ color: '#6e7681' }}>
-          Don&apos;t have access? Contact your AI Agency representative.
+          Don&apos;t have access? Contact your AutoCore representative.
         </p>
 
       </div>

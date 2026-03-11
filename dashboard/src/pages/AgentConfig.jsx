@@ -273,7 +273,7 @@ function EmbedTab({ slug }) {
   const base   = window.location.origin
   const chatUrl = `${base}/chat/${slug}`
   const iframe  = `<iframe\n  src="${chatUrl}"\n  width="420"\n  height="600"\n  style="border:none;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.2);"\n  allow="clipboard-write"\n></iframe>`
-  const script  = `<!-- AI Agency Chat Widget -->\n<script>\n  (function(){\n    var iframe = document.createElement('iframe');\n    iframe.src = '${chatUrl}';\n    iframe.style.cssText = 'position:fixed;bottom:24px;right:24px;width:420px;height:600px;border:none;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,0.3);z-index:9999;';\n    document.body.appendChild(iframe);\n  })();\n</script>`
+  const script  = `<!-- AutoCore Chat Widget -->\n<script>\n  (function(){\n    var iframe = document.createElement('iframe');\n    iframe.src = '${chatUrl}';\n    iframe.style.cssText = 'position:fixed;bottom:24px;right:24px;width:420px;height:600px;border:none;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,0.3);z-index:9999;';\n    document.body.appendChild(iframe);\n  })();\n</script>`
 
   return (
     <div className="max-w-2xl space-y-6">

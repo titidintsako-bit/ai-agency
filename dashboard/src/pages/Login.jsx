@@ -50,7 +50,7 @@ export default function Login() {
           </svg>
         </div>
         <div className="text-center">
-          <h1 className="text-xl font-semibold" style={{ color: '#e6edf3' }}>AI Agency</h1>
+          <h1 className="text-xl font-semibold" style={{ color: '#e6edf3' }}>AutoCore</h1>
           <p className="text-sm mt-1" style={{ color: '#6e7681' }}>Admin Dashboard</p>
         </div>
       </div>

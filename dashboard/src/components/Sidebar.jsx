@@ -153,7 +153,7 @@ export default function Sidebar({ open, onClose }) {
           </svg>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold leading-none" style={{ color: '#e6edf3' }}>AI Agency</p>
+          <p className="text-sm font-semibold leading-none" style={{ color: '#e6edf3' }}>AutoCore</p>
           <p className="text-xs mt-0.5 truncate" style={{ color: '#8b949e' }}>Admin</p>
         </div>
         {/* Close button — mobile only */}
