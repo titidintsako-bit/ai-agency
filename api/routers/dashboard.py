@@ -1,15 +1,17 @@
 """
 api/routers/dashboard.py
 
-Admin dashboard data endpoints. All endpoints are read-only except the
-escalation PATCH which lets you mark escalations as reviewed/resolved.
+Admin dashboard data endpoints.
 
 Routes:
     GET  /dashboard/stats                        — overview metric cards
     GET  /dashboard/agents                       — all agent rows with client name
-    GET  /dashboard/conversations                — paginated conversation list
+    PATCH /dashboard/agents/{agent_id}/toggle    — enable / disable an agent
+    GET  /dashboard/conversations                — paginated conversation list (with lead score)
     GET  /dashboard/escalations                  — escalation queue
     PATCH /dashboard/escalations/{escalation_id} — mark reviewed / resolved
+    GET  /dashboard/appointments                 — appointment requests
+    PATCH /dashboard/appointments/{id}           — update appointment status
 """
 
 import logging
@@ -127,6 +129,49 @@ async def get_agents(_: str = Depends(get_current_user)) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# PATCH /dashboard/agents/{agent_id}/toggle
+# ---------------------------------------------------------------------------
+
+@router.patch("/agents/{agent_id}/toggle")
+async def toggle_agent(
+    agent_id: str,
+    _: str = Depends(get_current_user),
+) -> dict:
+    """
+    Flip the is_active flag for an agent.
+    Returns the updated agent row.
+    """
+    db = get_db()
+
+    try:
+        current = (
+            db.table("agents")
+            .select("id, is_active")
+            .eq("id", agent_id)
+            .limit(1)
+            .execute()
+        )
+        if not current.data:
+            raise HTTPException(status_code=404, detail="Agent not found.")
+
+        new_state = not current.data[0]["is_active"]
+        result = (
+            db.table("agents")
+            .update({"is_active": new_state})
+            .eq("id", agent_id)
+            .execute()
+        )
+        logger.info(f"Agent {agent_id} toggled to is_active={new_state}")
+        return {"agent": result.data[0]}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Agent toggle failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to toggle agent.")
+
+
+# ---------------------------------------------------------------------------
 # GET /dashboard/conversations
 # ---------------------------------------------------------------------------
 
@@ -168,6 +213,32 @@ async def get_conversations(
         data = result.data
         if client_slug:
             data = [r for r in data if r.get("clients", {}).get("slug") == client_slug]
+
+        # Annotate with lead score — check which conversations have a booking
+        if data:
+            conv_ids = [c["id"] for c in data]
+            try:
+                appt_r = (
+                    db.table("appointments")
+                    .select("conversation_id")
+                    .in_("conversation_id", conv_ids)
+                    .execute()
+                )
+                booked_ids = {r["conversation_id"] for r in appt_r.data}
+            except Exception:
+                booked_ids = set()
+
+            for c in data:
+                if c["id"] in booked_ids:
+                    c["lead_score"] = "booked"
+                elif c["status"] == "escalated":
+                    c["lead_score"] = "urgent"
+                elif c["status"] == "completed":
+                    c["lead_score"] = "qualified"
+                elif c["status"] == "active":
+                    c["lead_score"] = "active"
+                else:
+                    c["lead_score"] = "cold"
 
         return {"conversations": data, "count": len(data)}
 
@@ -312,6 +383,49 @@ async def update_escalation(
     except Exception as e:
         logger.error(f"Escalation update failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to update escalation.")
+
+
+# ---------------------------------------------------------------------------
+# PATCH /dashboard/appointments/{appointment_id}
+# ---------------------------------------------------------------------------
+
+class AppointmentUpdate(BaseModel):
+    status: str   # "confirmed" | "cancelled" | "completed"
+
+@router.patch("/appointments/{appointment_id}")
+async def update_appointment(
+    appointment_id: str,
+    body: AppointmentUpdate,
+    _: str = Depends(get_current_user),
+) -> dict:
+    """
+    Update appointment status from the dashboard.
+    Allowed transitions: pending→confirmed, pending→cancelled, confirmed→completed.
+    """
+    valid = ("confirmed", "cancelled", "completed")
+    if body.status not in valid:
+        raise HTTPException(status_code=400, detail=f"Status must be one of: {valid}")
+
+    db = get_db()
+
+    try:
+        result = (
+            db.table("appointments")
+            .update({"status": body.status})
+            .eq("id", appointment_id)
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Appointment not found.")
+
+        logger.info(f"Appointment {appointment_id} status → '{body.status}'")
+        return {"appointment": result.data[0]}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Appointment update failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to update appointment.")
 
 
 # ---------------------------------------------------------------------------

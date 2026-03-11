@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { PortalAuthProvider } from './context/PortalAuthContext'
 import { ToastProvider } from './context/ToastContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
 
+// Admin pages
 import Login              from './pages/Login'
 import Home               from './pages/Home'
+import Agents             from './pages/Agents'
 import Conversations      from './pages/Conversations'
 import ConversationDetail from './pages/ConversationDetail'
 import Escalations        from './pages/Escalations'
@@ -17,6 +20,15 @@ import Monitor            from './pages/Monitor'
 import SmilecareSite      from './pages/SmilecareSite'
 import LexisProSite       from './pages/LexisProSite'
 import Appointments       from './pages/Appointments'
+
+// Portal pages
+import PortalLogin         from './pages/portal/PortalLogin'
+import PortalShell         from './pages/portal/PortalShell'
+import PortalDashboard     from './pages/portal/PortalDashboard'
+import PortalConversations from './pages/portal/PortalConversations'
+import PortalAppointments  from './pages/portal/PortalAppointments'
+import PortalEscalations   from './pages/portal/PortalEscalations'
+import PortalAgents        from './pages/portal/PortalAgents'
 
 function Shell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -76,58 +88,67 @@ function Shell({ children }) {
 export default function App() {
   return (
     <AuthProvider>
-      <ToastProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public — no auth, no sidebar */}
-          <Route path="/login"          element={<Login />} />
-          <Route path="/chat/:slug"     element={<ChatWidget />} />
-          <Route path="/monitor"        element={<Monitor />} />
-          <Route path="/smilecare"      element={<SmilecareSite />} />
-          <Route path="/lexispro"       element={<LexisProSite />} />
+      <PortalAuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* ── Public — no auth, no sidebar ─────────────────────────── */}
+              <Route path="/login"          element={<Login />} />
+              <Route path="/chat/:slug"     element={<ChatWidget />} />
+              <Route path="/monitor"        element={<Monitor />} />
+              <Route path="/smilecare"      element={<SmilecareSite />} />
+              <Route path="/lexispro"       element={<LexisProSite />} />
 
-          {/* Protected — all inside the sidebar shell */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Shell><Home /></Shell>
-            </ProtectedRoute>
-          } />
-          <Route path="/conversations" element={
-            <ProtectedRoute>
-              <Shell><Conversations /></Shell>
-            </ProtectedRoute>
-          } />
-          <Route path="/conversations/:id" element={
-            <ProtectedRoute>
-              <Shell><ConversationDetail /></Shell>
-            </ProtectedRoute>
-          } />
-          <Route path="/escalations" element={
-            <ProtectedRoute>
-              <Shell><Escalations /></Shell>
-            </ProtectedRoute>
-          } />
-          <Route path="/analytics" element={
-            <ProtectedRoute>
-              <Shell><Analytics /></Shell>
-            </ProtectedRoute>
-          } />
-          <Route path="/config" element={
-            <ProtectedRoute>
-              <Shell><AgentConfig /></Shell>
-            </ProtectedRoute>
-          } />
-          <Route path="/appointments" element={
-            <ProtectedRoute>
-              <Shell><Appointments /></Shell>
-            </ProtectedRoute>
-          } />
+              {/* ── Portal — client-facing ────────────────────────────────── */}
+              <Route path="/portal/login"   element={<PortalLogin />} />
+              <Route path="/portal" element={
+                <PortalShell><PortalDashboard /></PortalShell>
+              } />
+              <Route path="/portal/conversations" element={
+                <PortalShell><PortalConversations /></PortalShell>
+              } />
+              <Route path="/portal/appointments" element={
+                <PortalShell><PortalAppointments /></PortalShell>
+              } />
+              <Route path="/portal/escalations" element={
+                <PortalShell><PortalEscalations /></PortalShell>
+              } />
+              <Route path="/portal/agents" element={
+                <PortalShell><PortalAgents /></PortalShell>
+              } />
 
-          {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-      </ToastProvider>
+              {/* ── Admin — protected, inside sidebar shell ───────────────── */}
+              <Route path="/" element={
+                <ProtectedRoute><Shell><Home /></Shell></ProtectedRoute>
+              } />
+              <Route path="/agents" element={
+                <ProtectedRoute><Shell><Agents /></Shell></ProtectedRoute>
+              } />
+              <Route path="/conversations" element={
+                <ProtectedRoute><Shell><Conversations /></Shell></ProtectedRoute>
+              } />
+              <Route path="/conversations/:id" element={
+                <ProtectedRoute><Shell><ConversationDetail /></Shell></ProtectedRoute>
+              } />
+              <Route path="/escalations" element={
+                <ProtectedRoute><Shell><Escalations /></Shell></ProtectedRoute>
+              } />
+              <Route path="/analytics" element={
+                <ProtectedRoute><Shell><Analytics /></Shell></ProtectedRoute>
+              } />
+              <Route path="/config" element={
+                <ProtectedRoute><Shell><AgentConfig /></Shell></ProtectedRoute>
+              } />
+              <Route path="/appointments" element={
+                <ProtectedRoute><Shell><Appointments /></Shell></ProtectedRoute>
+              } />
+
+              {/* Catch-all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
+      </PortalAuthProvider>
     </AuthProvider>
   )
 }

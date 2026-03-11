@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getAppointments } from '../api/dashboard'
+import { getAppointments, updateAppointment } from '../api/dashboard'
 import { useToast } from '../context/ToastContext'
 
 // ── Status styles ─────────────────────────────────────────────────────────────
@@ -46,8 +46,23 @@ const PAGE_SIZE = 50
 
 // ── Appointment row ───────────────────────────────────────────────────────────
 
-function ApptRow({ appt }) {
-  const [open, setOpen] = useState(false)
+function ApptRow({ appt, onStatusChange }) {
+  const [open,    setOpen]    = useState(false)
+  const [saving,  setSaving]  = useState(false)
+  const toast = useToast()
+
+  async function changeStatus(newStatus) {
+    setSaving(true)
+    try {
+      await updateAppointment(appt.id, { status: newStatus })
+      onStatusChange(appt.id, newStatus)
+      toast(`Appointment ${newStatus}`, 'success')
+    } catch (e) {
+      toast('Failed to update: ' + e.message, 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div
@@ -129,6 +144,45 @@ function ApptRow({ appt }) {
                 </Link>
               </div>
             )}
+            {/* Action buttons */}
+            {appt.status === 'pending' && (
+              <div className="col-span-full flex items-center gap-2 pt-1">
+                <button
+                  onClick={() => changeStatus('confirmed')}
+                  disabled={saving}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150"
+                  style={{ background: 'rgba(63,185,80,0.12)', color: '#3fb950', border: '1px solid rgba(63,185,80,0.25)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(63,185,80,0.22)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(63,185,80,0.12)' }}
+                >
+                  {saving ? 'Saving…' : '✓ Confirm'}
+                </button>
+                <button
+                  onClick={() => changeStatus('cancelled')}
+                  disabled={saving}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150"
+                  style={{ background: 'rgba(248,81,73,0.1)', color: '#f85149', border: '1px solid rgba(248,81,73,0.2)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,81,73,0.18)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(248,81,73,0.1)' }}
+                >
+                  ✕ Cancel
+                </button>
+              </div>
+            )}
+            {appt.status === 'confirmed' && (
+              <div className="col-span-full flex items-center gap-2 pt-1">
+                <button
+                  onClick={() => changeStatus('completed')}
+                  disabled={saving}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150"
+                  style={{ background: 'rgba(139,148,158,0.1)', color: '#8b949e', border: '1px solid rgba(139,148,158,0.2)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,148,158,0.18)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(139,148,158,0.1)' }}
+                >
+                  {saving ? 'Saving…' : '✓ Mark Completed'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -159,7 +213,6 @@ export default function Appointments() {
   const [offset,   setOffset]   = useState(0)
   const [hasMore,  setHasMore]  = useState(false)
 
-  const [pendingStatus, setPendingStatus] = useState('')
   const [appliedStatus, setAppliedStatus] = useState('pending')
 
   const fetchPage = useCallback(async (off, status) => {
@@ -181,15 +234,10 @@ export default function Appointments() {
   }, [toast])
 
   useEffect(() => {
-    setPendingStatus(appliedStatus)
     setOffset(0)
     fetchPage(0, appliedStatus)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appliedStatus])
-
-  function applyFilters() {
-    setAppliedStatus(pendingStatus)
-  }
 
   function loadMore() {
     const next = offset + PAGE_SIZE
@@ -197,8 +245,11 @@ export default function Appointments() {
     fetchPage(next, appliedStatus)
   }
 
-  const pending   = rows.filter(r => r.status === 'pending').length
-  const confirmed = rows.filter(r => r.status === 'confirmed').length
+  const pending = rows.filter(r => r.status === 'pending').length
+
+  function handleStatusChange(id, newStatus) {
+    setRows(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r))
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -233,7 +284,7 @@ export default function Appointments() {
           ].map(({ val, label }) => (
             <button
               key={val}
-              onClick={() => { setPendingStatus(val); setAppliedStatus(val) }}
+              onClick={() => setAppliedStatus(val)}
               className="px-3 py-1 rounded-md text-sm transition-all duration-150"
               style={
                 appliedStatus === val
@@ -317,7 +368,7 @@ export default function Appointments() {
           </div>
         ) : (
           <>
-            {rows.map(a => <ApptRow key={a.id} appt={a} />)}
+            {rows.map(a => <ApptRow key={a.id} appt={a} onStatusChange={handleStatusChange} />)}
             {hasMore && (
               <div className="py-4 flex justify-center">
                 <button

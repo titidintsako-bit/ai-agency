@@ -25,7 +25,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.registry import registry
-from api.routers import agent_config, analytics, auth, chat, dashboard, events, monitor, webhooks
+from api.routers import agent_config, analytics, auth, chat, dashboard, events, monitor, portal, webhooks
 from api.schemas import HealthResponse
 from config.settings import get_settings
 from core.database import check_connection
@@ -151,7 +151,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -167,6 +167,7 @@ app.include_router(analytics.router)
 app.include_router(agent_config.router)
 app.include_router(events.router)
 app.include_router(monitor.router)
+app.include_router(portal.router)
 app.include_router(webhooks.router)
 
 

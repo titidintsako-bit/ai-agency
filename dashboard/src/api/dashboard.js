@@ -20,3 +20,9 @@ export const getConversationMessages = (id) =>
 
 export const getAppointments = (params = {}) =>
   client.get('/dashboard/appointments', { params })
+
+export const updateAppointment = (id, data) =>
+  client.patch(`/dashboard/appointments/${id}`, data)
+
+export const toggleAgent = (id) =>
+  client.patch(`/dashboard/agents/${id}/toggle`)
