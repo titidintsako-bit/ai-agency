@@ -23,6 +23,26 @@ logger = logging.getLogger(__name__)
 _SAST = ZoneInfo("Africa/Johannesburg")
 
 
+def _parse_hours_config(hours_config: dict) -> dict[str, tuple[str, str] | None]:
+    """
+    Parse the YAML hours dict into a {DayName: (open, close) | None} map.
+
+    YAML format:  monday: "08:00 - 17:00"  or  saturday: "Closed"
+    Returns:      {"Monday": ("08:00", "17:00"), "Saturday": None, ...}
+    """
+    result: dict[str, tuple[str, str] | None] = {}
+    for key, value in hours_config.items():
+        if key == "public_holidays":
+            continue
+        day = key.capitalize()
+        if isinstance(value, str) and " - " in value:
+            open_t, close_t = value.split(" - ", 1)
+            result[day] = (open_t.strip(), close_t.strip())
+        else:
+            result[day] = None
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Tool definitions
 # ---------------------------------------------------------------------------
@@ -146,23 +166,34 @@ LEXISPRO_TOOLS: list[dict] = [
 # Tool handlers
 # ---------------------------------------------------------------------------
 
-def check_business_hours() -> str:
-    """Return the current SAST time and whether the firm is open."""
+def check_business_hours(hours_config: dict | None = None) -> str:
+    """
+    Return the current SAST time and whether the firm is open.
+
+    Args:
+        hours_config: The `hours` dict from firm_info in lexispro.yaml.
+                      Hours are read from config so they stay in sync with
+                      the YAML. Falls back to hardcoded defaults if not provided.
+    """
     now = datetime.now(_SAST)
     day_name         = now.strftime("%A")
     current_time_str = now.strftime("%H:%M")
 
-    _HOURS: dict[str, tuple[str, str] | None] = {
-        "Monday":    ("08:00", "17:00"),
-        "Tuesday":   ("08:00", "17:00"),
-        "Wednesday": ("08:00", "17:00"),
-        "Thursday":  ("08:00", "17:00"),
-        "Friday":    ("08:00", "16:00"),
-        "Saturday":  None,
-        "Sunday":    None,
-    }
+    if hours_config:
+        hours_map = _parse_hours_config(hours_config)
+    else:
+        # Hardcoded fallback matching lexispro.yaml
+        hours_map = {
+            "Monday":    ("08:00", "17:00"),
+            "Tuesday":   ("08:00", "17:00"),
+            "Wednesday": ("08:00", "17:00"),
+            "Thursday":  ("08:00", "17:00"),
+            "Friday":    ("08:00", "16:00"),
+            "Saturday":  None,
+            "Sunday":    None,
+        }
 
-    today = _HOURS.get(day_name)
+    today = hours_map.get(day_name)
 
     if today is None:
         return (
@@ -186,12 +217,20 @@ async def save_consultation(
     tool_input: dict,
     conversation_id: str,
     client_id: str,
+    contact_phone: str = "",
 ) -> str:
     """
     Write a consultation request to the appointments table.
 
     Reuses the shared appointments table — service_type maps to legal_matter.
     """
+    # Guard against Claude sending an incomplete tool call
+    required = ["client_name", "contact_number", "preferred_date", "preferred_time", "legal_matter"]
+    missing = [f for f in required if not tool_input.get(f)]
+    if missing:
+        logger.warning(f"book_consultation called with missing fields: {missing}")
+        return f"ERROR: Missing required fields: {', '.join(missing)}. Please collect these before booking."
+
     db = get_db()
 
     try:
@@ -228,7 +267,5 @@ async def save_consultation(
 
     except Exception as e:
         logger.error(f"Failed to save consultation for conversation {conversation_id}: {e}")
-        return (
-            "ERROR: Could not save the consultation request due to a system error. "
-            "Please inform the client to call 021 555 1234 directly to book."
-        )
+        phone_hint = f" Please inform the client to call {contact_phone} directly." if contact_phone else ""
+        return f"ERROR: Could not save the consultation request due to a system error.{phone_hint}"

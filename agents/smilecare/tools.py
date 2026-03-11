@@ -34,6 +34,26 @@ logger = logging.getLogger(__name__)
 _SAST = ZoneInfo("Africa/Johannesburg")
 
 
+def _parse_hours_config(hours_config: dict) -> dict[str, tuple[str, str] | None]:
+    """
+    Parse the YAML hours dict into a {DayName: (open, close) | None} map.
+
+    YAML format:  monday: "07:00 - 18:00"  or  sunday: "Closed"
+    Returns:      {"Monday": ("07:00", "18:00"), "Sunday": None, ...}
+    """
+    result: dict[str, tuple[str, str] | None] = {}
+    for key, value in hours_config.items():
+        if key == "public_holidays":
+            continue
+        day = key.capitalize()
+        if isinstance(value, str) and " - " in value:
+            open_t, close_t = value.split(" - ", 1)
+            result[day] = (open_t.strip(), close_t.strip())
+        else:
+            result[day] = None  # "Closed" or any non-range value
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Tool definitions — Anthropic JSON schema format
 # These are passed directly to the Claude API in the `tools` parameter.
@@ -154,35 +174,39 @@ SMILECARE_TOOLS: list[dict] = [
 # Tool handlers
 # ---------------------------------------------------------------------------
 
-def check_business_hours() -> str:
+def check_business_hours(hours_config: dict | None = None) -> str:
     """
     Return the current SAST time and whether the clinic is open.
 
-    Uses the zoneinfo module (Python 3.9+ stdlib) — no external dependency.
-    South Africa does not observe daylight saving time, so ZoneInfo("Africa/Johannesburg")
-    is always UTC+2.
+    Args:
+        hours_config: The `hours` dict from clinic_info in smilecare.yaml.
+                      If provided, hours are read from config so they stay in
+                      sync with the YAML. Falls back to hardcoded defaults if
+                      not provided.
 
     Returns:
         A plain-English string Claude can relay directly to the patient.
-        Example: "Current time: 09:32 SAST | Today (Saturday): 09:00 – 13:00 | Status: OPEN"
+        Example: "Current time: 09:32 SAST | Today (Saturday): 08:00 – 14:00 | Status: OPEN"
     """
     now = datetime.now(_SAST)
-    day_name = now.strftime("%A")
+    day_name         = now.strftime("%A")
     current_time_str = now.strftime("%H:%M")
 
-    # Business hours: (open_time, close_time) or None if closed
-    # Format: "HH:MM" strings for direct comparison
-    _HOURS: dict[str, tuple[str, str] | None] = {
-        "Monday":    ("08:00", "17:00"),
-        "Tuesday":   ("08:00", "17:00"),
-        "Wednesday": ("08:00", "17:00"),
-        "Thursday":  ("08:00", "17:00"),
-        "Friday":    ("08:00", "16:00"),
-        "Saturday":  ("09:00", "13:00"),
-        "Sunday":    None,
-    }
+    if hours_config:
+        hours_map = _parse_hours_config(hours_config)
+    else:
+        # Hardcoded fallback matching smilecare.yaml — used only if config not passed
+        hours_map = {
+            "Monday":    ("07:00", "18:00"),
+            "Tuesday":   ("07:00", "18:00"),
+            "Wednesday": ("07:00", "18:00"),
+            "Thursday":  ("07:00", "18:00"),
+            "Friday":    ("07:00", "18:00"),
+            "Saturday":  ("08:00", "14:00"),
+            "Sunday":    None,
+        }
 
-    today = _HOURS.get(day_name)
+    today = hours_map.get(day_name)
 
     if today is None:
         return (
@@ -206,6 +230,7 @@ async def save_appointment(
     tool_input: dict,
     conversation_id: str,
     client_id: str,
+    contact_phone: str = "",
 ) -> str:
     """
     Write an appointment request to the appointments table.
@@ -221,6 +246,13 @@ async def save_appointment(
     Raises:
         RuntimeError: If the database insert fails (propagated to Claude as an error string).
     """
+    # Guard against Claude sending an incomplete tool call
+    required = ["patient_name", "contact_number", "preferred_date", "preferred_time", "service_type"]
+    missing = [f for f in required if not tool_input.get(f)]
+    if missing:
+        logger.warning(f"book_appointment called with missing fields: {missing}")
+        return f"ERROR: Missing required fields: {', '.join(missing)}. Please collect these before booking."
+
     db = get_db()
 
     try:
@@ -258,7 +290,5 @@ async def save_appointment(
 
     except Exception as e:
         logger.error(f"Failed to save appointment for conversation {conversation_id}: {e}")
-        return (
-            "ERROR: Could not save the appointment request due to a system error. "
-            "Please inform the patient to call +27 11 234 5678 directly to book."
-        )
+        phone_hint = f" Please inform the patient to call {contact_phone} directly." if contact_phone else ""
+        return f"ERROR: Could not save the appointment request due to a system error.{phone_hint}"

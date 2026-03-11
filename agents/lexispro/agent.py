@@ -17,12 +17,13 @@ Instantiation:
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import yaml
 
-_SAST = timezone(timedelta(hours=2))
+_SAST = ZoneInfo("Africa/Johannesburg")
 
 from agents.lexispro.tools import (
     LEXISPRO_TOOLS,
@@ -96,13 +97,16 @@ class LexisProAgent(BaseAgent):
         conversation_id: str,
     ) -> str:
         if tool_name == "check_business_hours":
-            return check_business_hours()
+            return check_business_hours(
+                self._config.get("firm_info", {}).get("hours")
+            )
 
         if tool_name == "book_consultation":
             return await save_consultation(
                 tool_input=tool_input,
                 conversation_id=conversation_id,
                 client_id=self.client_id,
+                contact_phone=self._config.get("firm_info", {}).get("phone", ""),
             )
 
         if tool_name == "escalate_to_human":

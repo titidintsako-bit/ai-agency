@@ -28,12 +28,13 @@ Instantiation:
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import yaml
 
-_SAST = timezone(timedelta(hours=2))
+_SAST = ZoneInfo("Africa/Johannesburg")
 
 from agents.smilecare.tools import (
     SMILECARE_TOOLS,
@@ -138,15 +139,16 @@ class SmileCareAgent(BaseAgent):
             Result string sent back to Claude as the tool result.
         """
         if tool_name == "check_business_hours":
-            # Synchronous — just computes current SAST time, no I/O
-            return check_business_hours()
+            return check_business_hours(
+                self._config.get("clinic_info", {}).get("hours")
+            )
 
         if tool_name == "book_appointment":
-            # Async — writes to the appointments table
             return await save_appointment(
                 tool_input=tool_input,
                 conversation_id=conversation_id,
                 client_id=self.client_id,
+                contact_phone=self._config.get("clinic_info", {}).get("phone", ""),
             )
 
         if tool_name == "escalate_to_human":
@@ -204,7 +206,8 @@ def _build_system_prompt(config: dict) -> str:
 
     # ── Format services list ──────────────────────────────────────────────
     services_block = "\n".join(
-        f"  • {svc['name']:<38} {svc.get('price_display', 'R' + str(svc['price_zar']))}  ({svc['duration_minutes']} min)"
+        f"  • {svc['name']:<38} {svc.get('price_display', 'R' + str(svc['price_zar']))}"
+        + (f"  ({svc['duration_minutes']} min)" if svc.get("duration_minutes") else "")
         for svc in services
     )
 
